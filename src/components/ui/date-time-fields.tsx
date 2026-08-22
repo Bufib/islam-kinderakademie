@@ -10,7 +10,9 @@ type DateTimeFieldProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
   minimum?: string;
+  maximum?: string;
 };
 
 function PickerField({
@@ -18,11 +20,14 @@ function PickerField({
   value,
   onChange,
   mode,
+  placeholder,
   minimum,
+  maximum,
 }: DateTimeFieldProps & { mode: 'date' | 'time' }) {
   const [open, setOpen] = useState(false);
   const pickerValue = mode === 'date' ? parseDate(value) : parseTime(value);
   const minimumDate = mode === 'date' && minimum ? parseDate(minimum) : undefined;
+  const maximumDate = mode === 'date' && maximum ? parseDate(maximum) : undefined;
 
   function handleChange(event: DateTimePickerEvent, selected?: Date) {
     if (Platform.OS === 'android') setOpen(false);
@@ -40,7 +45,7 @@ function PickerField({
         style={({ pressed }) => [styles.field, pressed && styles.pressed]}>
         <AppIcon name={mode === 'date' ? 'calendar' : 'clock'} size={19} color={Palette.forest} />
         <AppText color={value ? Palette.ink : Palette.muted} style={styles.value}>
-          {value || (mode === 'date' ? 'Datum auswählen' : 'Uhrzeit auswählen')}
+          {value || placeholder || (mode === 'date' ? 'Datum auswählen' : 'Uhrzeit auswählen')}
         </AppText>
       </Pressable>
       {open && (
@@ -50,6 +55,7 @@ function PickerField({
             mode={mode}
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             minimumDate={minimumDate}
+            maximumDate={maximumDate}
             minuteInterval={5}
             onChange={handleChange}
           />

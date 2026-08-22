@@ -167,8 +167,21 @@ export default function GroupsScreen() {
   }
 
   function openMoveDialog(membership: GroupMemberRow) {
+    const child = data.children.find(
+      (entry) => entry.id === membership.child_id,
+    );
+    const alternativeGroup = data.groups.find(
+      (group) =>
+        membership.membership_status === "pending" &&
+        group.id !== membership.group_id &&
+        group.age_group_id === child?.age_group_id &&
+        data.academyYears.some(
+          (year) => year.id === group.academy_year_id && year.is_active,
+        ),
+    );
+
     setMovingMembership(membership);
-    setMoveGroupId(membership.group_id);
+    setMoveGroupId(alternativeGroup?.id ?? membership.group_id);
     setMoveError(null);
   }
 
@@ -240,6 +253,13 @@ export default function GroupsScreen() {
         (year) => year.id === group.academy_year_id && year.is_active,
       ),
   );
+  const assigningPendingRequest =
+    movingMembership?.membership_status === "pending";
+  const selectableMoveTimeGroups = assigningPendingRequest
+    ? moveTimeGroups.filter(
+        (group) => group.id !== movingMembership?.group_id,
+      )
+    : moveTimeGroups;
 
   return (
     <PageScaffold
@@ -327,6 +347,15 @@ export default function GroupsScreen() {
                   (entry) => entry.id === child?.parent_profile_id,
                 );
                 const reviewing = reviewingId === membership.id;
+                const hasAlternativeTimeGroup = data.groups.some(
+                  (group) =>
+                    group.id !== membership.group_id &&
+                    group.age_group_id === child?.age_group_id &&
+                    data.academyYears.some(
+                      (year) =>
+                        year.id === group.academy_year_id && year.is_active,
+                    ),
+                );
 
                 return (
                   <View key={membership.id} style={styles.requestRow}>
@@ -352,6 +381,16 @@ export default function GroupsScreen() {
                     </View>
 
                     <View style={styles.requestActions}>
+                      {hasAlternativeTimeGroup && (
+                        <ActionButton
+                          label="Andere Gruppe zuweisen"
+                          compact
+                          icon="groups"
+                          variant="secondary"
+                          disabled={reviewing}
+                          onPress={() => openMoveDialog(membership)}
+                        />
+                      )}
                       <ActionButton
                         label="Ablehnen"
                         compact
@@ -558,27 +597,35 @@ export default function GroupsScreen() {
 
       <FormDialog
         visible={Boolean(movingMembership)}
-        title="Zeitgruppe des Kindes ändern"
+        title={
+          assigningPendingRequest
+            ? "Andere Zeitgruppe zuweisen"
+            : "Zeitgruppe des Kindes ändern"
+        }
         description={
           movingChild
-            ? `${movingChild.display_name} wird direkt in die ausgewählte Zeitgruppe verschoben. Eine neue Elternanfrage ist nicht erforderlich.`
+            ? assigningPendingRequest
+              ? `${movingChild.display_name} wird direkt der ausgewählten Zeitgruppe zugewiesen und freigeschaltet. Die ursprüngliche Anfrage wird beendet.`
+              : `${movingChild.display_name} wird direkt in die ausgewählte Zeitgruppe verschoben. Eine neue Elternanfrage ist nicht erforderlich.`
             : undefined
         }
+        saveLabel={assigningPendingRequest ? "Zuweisen" : "Speichern"}
         saving={moving}
         onClose={() => setMovingMembership(null)}
         onSave={() => void moveChild()}
       >
         {moveError && <ErrorBanner message={moveError} />}
         <ChoiceChips
-          label="Neue Zeitgruppe"
+          label={assigningPendingRequest ? "Zeitgruppe" : "Neue Zeitgruppe"}
           value={moveGroupId}
           onChange={setMoveGroupId}
-          options={moveTimeGroups.map((group) => ({
+          options={selectableMoveTimeGroups.map((group) => ({
             value: group.id,
             label: `${group.name} · ${group.schedule_label}`,
           }))}
         />
-        {moveTimeGroups.length < 2 && (
+        {selectableMoveTimeGroups.length <
+          (assigningPendingRequest ? 1 : 2) && (
           <AppText variant="small" color={Palette.muted}>
             Für diese Altersgruppe ist aktuell keine weitere aktive Zeitgruppe
             eingerichtet.

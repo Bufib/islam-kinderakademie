@@ -232,7 +232,7 @@ export function ChildDashboard() {
               {latestQuizAttempt
                 ? `${latestQuizAttempt.score_percent} % erreicht${latestQuizAttempt.passed ? ' – bestanden!' : '. Du kannst es erneut versuchen.'}`
                 : nextQuiz
-                  ? `${nextQuizQuestionCount} Fragen warten nach dem Live-Unterricht auf dich.`
+                  ? `${nextQuizQuestionCount} Fragen warten auf dich.`
                   : 'Das Quiz erscheint nach der Veröffentlichung.'}
             </AppText>
           </View>

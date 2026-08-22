@@ -373,7 +373,7 @@ export async function deleteRecord(
 export async function saveChildWithTimeGroupRequest(input: {
   id?: number;
   displayName: string;
-  birthDate?: string | null;
+  birthDate: string;
   ageGroupId: number;
   gender: 'male' | 'female';
   avatarKey: string;
@@ -384,7 +384,7 @@ export async function saveChildWithTimeGroupRequest(input: {
     {
       target_child_id: input.id ?? null,
       child_display_name: input.displayName.trim(),
-      child_birth_date: input.birthDate || null,
+      child_birth_date: input.birthDate,
       child_age_group_id: input.ageGroupId,
       child_gender: input.gender,
       child_avatar_key: input.avatarKey,

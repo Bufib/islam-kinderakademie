@@ -7,7 +7,8 @@ import { ChoiceChips, DataLoading, ErrorBanner } from '@/components/ui/data-ui';
 import { ActionButton, AppText, Card, Field, PageScaffold, Pill, SectionHeader } from '@/components/ui/primitives';
 import { Palette, Radius, Space } from '@/constants/design';
 import { useAcademyData } from '@/context/academy-data-context';
-import { deleteRecord, saveMultipleChoiceQuiz } from '@/lib/academy-api';
+import { useAuth } from '@/context/auth-context';
+import { deleteRecord, saveMultipleChoiceQuiz, setQuizRelease } from '@/lib/academy-api';
 import { AcademyData, LessonQuizRow, LessonRow } from '@/types/database';
 import { confirmAction } from '@/utils/feedback';
 import { apiErrorMessage } from '@/utils/format';
@@ -74,6 +75,8 @@ function QuizEditor({
 }) {
   const router = useRouter();
   const { execute } = useAcademyData();
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const existingQuestions = quiz
     ? data.quizQuestions
         .filter((question) => question.quiz_id === quiz.id)
@@ -100,7 +103,9 @@ function QuizEditor({
     initialQuestions.length > 0 ? initialQuestions : [emptyQuestion()]
   );
   const [saving, setSaving] = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const canReleaseQuiz = lesson.status === 'published' && lesson.is_released;
 
   function updateQuestion(index: number, changes: Partial<QuestionForm>) {
     setQuestions((current) =>
@@ -205,6 +210,28 @@ function QuizEditor({
     }
   }
 
+  async function toggleRelease() {
+    if (!quiz || !isAdmin) return;
+
+    if (quiz.is_published) {
+      const confirmed = await confirmAction(
+        'Quiz sperren?',
+        `„${quiz.title}“ ist danach für Familien nicht mehr sichtbar.`
+      );
+      if (!confirmed) return;
+    }
+
+    setReleasing(true);
+    setFormError(null);
+    try {
+      await execute(() => setQuizRelease(quiz.id, !quiz.is_published));
+    } catch (reason) {
+      setFormError(apiErrorMessage(reason));
+    } finally {
+      setReleasing(false);
+    }
+  }
+
   return (
     <PageScaffold
       eyebrow="Quiz-Editor"
@@ -216,7 +243,7 @@ function QuizEditor({
           <ActionButton
             label={saving ? 'Wird gespeichert …' : 'Quiz speichern'}
             icon="check"
-            disabled={saving}
+            disabled={saving || releasing}
             onPress={() => void saveQuiz()}
           />
         </View>
@@ -239,9 +266,37 @@ function QuizEditor({
               {isPublished ? 'Vom Admin freigegeben' : 'Noch nicht freigegeben'}
             </Pill>
             <AppText variant="small" color={Palette.inkSoft} style={styles.releaseCopy}>
-              Die Freigabe erfolgt durch einen Admin in der Lektionsübersicht, nachdem der Live-Termin als „Beendet“ markiert wurde.
+              Die Freigabe ist möglich, sobald die veröffentlichte Lektion freigegeben wurde.
             </AppText>
+            {isAdmin && quiz && (
+              <ActionButton
+                label={
+                  releasing
+                    ? 'Freigabe wird geändert …'
+                    : isPublished
+                      ? 'Quiz wieder sperren'
+                      : 'Quiz jetzt freigeben'
+                }
+                icon={isPublished ? 'close' : 'check'}
+                compact
+                disabled={releasing || saving || (!isPublished && !canReleaseQuiz)}
+                onPress={() => void toggleRelease()}
+              />
+            )}
           </View>
+          {!quiz ? (
+            <AppText variant="small" color={Palette.muted}>
+              Speichere das Quiz zuerst. Danach kann ein Admin es hier freigeben.
+            </AppText>
+          ) : !isAdmin ? (
+            <AppText variant="small" color={Palette.muted}>
+              Nur Admins können Quizze für Familien freigeben.
+            </AppText>
+          ) : !isPublished && !canReleaseQuiz ? (
+            <AppText variant="small" color={Palette.muted}>
+              Gib zuerst die veröffentlichte Lektion frei.
+            </AppText>
+          ) : null}
           {quiz && (
             <AppText variant="small" color={Palette.muted}>
               Beim Ändern der Fragen werden frühere Quizversuche zurückgesetzt, damit Auswertungen konsistent bleiben.
@@ -337,7 +392,7 @@ function QuizEditor({
         <ActionButton
           label={saving ? 'Wird gespeichert …' : 'Quiz speichern'}
           icon="check"
-          disabled={saving}
+          disabled={saving || releasing}
           onPress={() => void saveQuiz()}
         />
       </View>

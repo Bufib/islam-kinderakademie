@@ -18,12 +18,14 @@ import {
 } from "@/components/ui/primitives";
 import { Layout, Palette, Radius, Space } from "@/constants/design";
 import { useAcademyData } from "@/context/academy-data-context";
+import { setQuizRelease } from "@/lib/academy-api";
 import { supabase } from "@/lib/supabase";
 import type {
   MonthlyPaymentRow,
   PaymentAgreementRow,
 } from "@/types/database";
-import { formatDateTime } from "@/utils/format";
+import { confirmAction } from "@/utils/feedback";
+import { apiErrorMessage, formatDateTime } from "@/utils/format";
 
 /* ============================================================
  * ADMIN ACTIONS
@@ -113,11 +115,17 @@ export function AdminDashboard() {
 
   const stacked = width < Layout.contentStackBreakpoint;
 
-  const { data, isLoading, error, refresh } = useAcademyData();
+  const { data, isLoading, error, refresh, execute } = useAcademyData();
 
   const [quizSearch, setQuizSearch] = useState("");
 
   const [expandedLessonIds, setExpandedLessonIds] = useState<number[]>([]);
+
+  const [quizReleaseAction, setQuizReleaseAction] = useState<number | null>(
+    null,
+  );
+
+  const [quizActionError, setQuizActionError] = useState<string | null>(null);
 
   /* ==========================================================
    * PAYMENT STATE
@@ -422,6 +430,34 @@ export function AdminDashboard() {
     );
   }
 
+  async function toggleQuizRelease(
+    quizId: number,
+    quizTitle: string,
+    isReleased: boolean,
+  ) {
+    if (isReleased) {
+      const confirmed = await confirmAction(
+        "Quiz sperren?",
+        `„${quizTitle}“ ist danach für Familien nicht mehr sichtbar.`,
+      );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    setQuizReleaseAction(quizId);
+    setQuizActionError(null);
+
+    try {
+      await execute(() => setQuizRelease(quizId, !isReleased));
+    } catch (reason) {
+      setQuizActionError(apiErrorMessage(reason));
+    } finally {
+      setQuizReleaseAction(null);
+    }
+  }
+
   /* ==========================================================
    * RENDER
    * ========================================================== */
@@ -700,7 +736,7 @@ export function AdminDashboard() {
       <Card>
         <SectionHeader
           title="Themen und Multiple-Choice-Quizze"
-          description="Vorhandene Unterrichtsthemen bearbeiten und zu jeder Lektion ein Quiz anlegen."
+          description="Quizze anlegen, bearbeiten und für Familien freigeben."
           action={
             <ActionButton
               label="Alle Lektionen"
@@ -710,6 +746,8 @@ export function AdminDashboard() {
             />
           }
         />
+
+        {quizActionError && <ErrorBanner message={quizActionError} />}
 
         <View style={styles.quizToolbar}>
           <View style={styles.quizSearch}>
@@ -767,6 +805,9 @@ export function AdminDashboard() {
                     (question) => question.quiz_id === quiz.id,
                   ).length
                 : 0;
+
+              const canReleaseQuiz =
+                lesson.status === "published" && lesson.is_released;
 
               return (
                 <View key={lesson.id} style={styles.quizRow}>
@@ -851,6 +892,41 @@ export function AdminDashboard() {
                         variant={quiz ? "secondary" : "primary"}
                         onPress={() => openQuizEditor(lesson.id)}
                       />
+
+                      {quiz && (
+                        <ActionButton
+                          label={
+                            quizReleaseAction === quiz.id
+                              ? "Freigabe wird geändert …"
+                              : quiz.is_published
+                                ? "Quiz sperren"
+                                : "Quiz freigeben"
+                          }
+                          icon={quiz.is_published ? "close" : "check"}
+                          compact
+                          disabled={
+                            quizReleaseAction !== null ||
+                            (!quiz.is_published && !canReleaseQuiz)
+                          }
+                          onPress={() =>
+                            void toggleQuizRelease(
+                              quiz.id,
+                              quiz.title,
+                              quiz.is_published,
+                            )
+                          }
+                        />
+                      )}
+
+                      {quiz && !quiz.is_published && !canReleaseQuiz && (
+                        <AppText
+                          variant="small"
+                          color={Palette.muted}
+                          style={styles.quizReleaseHint}
+                        >
+                          Gib zuerst die veröffentlichte Lektion frei.
+                        </AppText>
+                      )}
                     </View>
                   )}
                 </View>
@@ -1226,6 +1302,10 @@ const styles = StyleSheet.create({
     paddingLeft: 40 + Space.md,
     paddingRight: Space.sm,
     paddingBottom: Space.md,
+  },
+
+  quizReleaseHint: {
+    flexBasis: "100%",
   },
 
   quizHint: {

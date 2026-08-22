@@ -263,7 +263,7 @@ Ordnet einer Lektion beliebig viele geordnete PDF-Dateien aus `media_assets` zu.
 
 #### `lesson_quizzes`
 
-Pro Lektion kann ein Quiz mit Titel, Beschreibung und Bestehensgrenze angelegt werden. `is_published`, `released_at` und `released_by_profile_id` bilden die separate Admin-Freigabe ab. Sie ist erst möglich, wenn die Lektion freigegeben und mindestens ein zugehöriger Live-Termin als `completed` markiert wurde.
+Pro Lektion kann ein Quiz mit Titel, Beschreibung und Bestehensgrenze angelegt werden. `is_published`, `released_at` und `released_by_profile_id` bilden die separate Admin-Freigabe ab. Sie ist möglich, sobald die zugehörige veröffentlichte Lektion freigegeben ist; der Status von Live-Terminen ist dafür keine Voraussetzung.
 
 #### `quiz_questions` und `quiz_options`
 
@@ -281,7 +281,7 @@ Speichern Versuche, ausgewählte Antworten, Prozentwert und Bestanden-Status. Di
 
 #### `children`
 
-Kinderprofile eines Elternprofils mit einer Referenz `age_group_id` auf `age_groups`.
+Kinderprofile eines Elternprofils mit verpflichtendem Geburtsdatum und einer Referenz `age_group_id` auf `age_groups`. Historische Profile ohne Geburtsdatum müssen beim nächsten Bearbeiten vervollständigt werden; neue und geänderte Datensätze werden ohne Geburtsdatum von Frontend und Datenbank abgelehnt.
 
 #### `groups`
 
@@ -296,7 +296,7 @@ Zeitgruppenwünsche und genehmigte Zuordnungen zwischen Zeitgruppen und Kindern.
 - `rejected` – durch einen Admin abgelehnt
 - `cancelled` – durch einen späteren Zeitgruppenwunsch oder Altersgruppenwechsel beendet
 
-Neue Kinder werden zusammen mit einer verpflichtenden Zeitgruppenanfrage über `save_child_with_time_group_request()` gespeichert. Altersgruppe und passende Lernreisen sind sofort sichtbar. Erst `review_time_group_request()` macht eine Zeitgruppe wirksam. Nur genehmigte Zuordnungen geben Zugriff auf Lektionen, Quizze, gruppenspezifische Termine, Zoom-Links und Mitteilungen.
+Neue Kinder werden zusammen mit einer verpflichtenden Zeitgruppenanfrage über `save_child_with_time_group_request()` gespeichert. Altersgruppe und passende Lernreisen sind sofort sichtbar. Ein Admin kann die angefragte Zeitgruppe über `review_time_group_request()` freischalten oder das Kind mit `admin_assign_child_time_group()` direkt einer anderen passenden aktiven Zeitgruppe zuweisen. Bei jeder neuen Freischaltung erhält das Elternprofil automatisch eine persönliche Mitteilung. Nur genehmigte Zuordnungen geben Zugriff auf Lektionen, Quizze, gruppenspezifische Termine, Zoom-Links und Mitteilungen.
 
 ### Live-Unterricht
 
@@ -311,7 +311,7 @@ Zoom- oder andere Live-Termine pro Lektion und optional pro Zeitgruppe. Enthält
 
 Die App erstellt derzeit keine Zoom-Meetings über die Zoom API und bettet keinen Zoom-Client ein. Ein Admin plant das echte Meeting außerhalb der App in Zoom und trägt ausschließlich den Teilnehmerlink im Feld `meeting_url` des Lektionseditors ein. Familien öffnen diesen externen Link aus der geschützten Lektionsansicht. Niemals Host-Key, Zoom-Kontopasswort oder andere Zoom-Secrets im Frontend beziehungsweise in `meeting_url` speichern. Ein im Teilnehmerlink codierter Meeting-Passcode ist davon nicht betroffen.
 
-Die Terminstatus werden im Kalender manuell gepflegt. Nach dem Unterricht muss ein Termin auf `completed` gesetzt werden, bevor das zugehörige Quiz freigegeben werden kann. Eine spätere automatische Meeting-Erstellung benötigt eine serverseitige Zoom-OAuth-/Meetings-API-Integration, beispielsweise über eine geschützte Supabase Edge Function; Zoom-Secrets dürfen dabei nicht in den Expo-Client gelangen.
+Die Terminstatus werden im Kalender manuell gepflegt und sind unabhängig von der Quizfreigabe. Eine spätere automatische Meeting-Erstellung benötigt eine serverseitige Zoom-OAuth-/Meetings-API-Integration, beispielsweise über eine geschützte Supabase Edge Function; Zoom-Secrets dürfen dabei nicht in den Expo-Client gelangen.
 
 In der Oberfläche werden Terminzeiten nicht als kombinierter ISO-Text eingegeben. Web verwendet ein Kalenderfeld und native Uhrzeitfelder; iOS und Android verwenden den nativen DateTimePicker. Ein Live-Termin hat ein gemeinsames Datum sowie getrennte Felder für Beginn und Ende. Vor dem Schreiben werden diese lokalen Werte wieder in ISO-Zeitpunkte umgewandelt.
 
@@ -354,7 +354,7 @@ Metadaten für Bilder, Audio, Video oder Dokumente. Die eigentlichen Dateien lie
 
 #### `messages`
 
-Mitteilungen an alle, an ein bestimmtes Profil oder an eine Zeitgruppe.
+Mitteilungen an alle, an ein bestimmtes Profil oder an eine Zeitgruppe. Beim erstmaligen Wechsel einer Zeitgruppenzuordnung auf `approved` erzeugt die Datenbank automatisch eine veröffentlichte persönliche Mitteilung für das Elternprofil des Kindes.
 
 ### Beziehungen
 
@@ -440,9 +440,12 @@ Aktueller relevanter Stand:
 - `20260821113000_time_group_age_integrity.sql` – schützt Altersgruppe und Akademiejahr verwendeter Zeitgruppen, Lernreisen und Termine vor widersprüchlichen Änderungen
 - `20260821114500_time_group_request_serialization.sql` – serialisiert parallele Elternänderungen und Admin-Entscheidungen pro Kind und sperrt Freigaben in inaktiven Akademiejahren
 - `20260821121500_approved_time_group_content_access.sql` – Lernreisen bleiben sichtbar, während Lektionen, Quizze, Live-Inhalte und neue Fortschrittsdaten bis zur genehmigten Zeitgruppe gesperrt sind
-- `20260821123500_admin_assign_child_time_group.sql` – Admins können freigeschaltete Kinder direkt und atomar zwischen passenden aktiven Zeitgruppen verschieben
+- `20260821123500_admin_assign_child_time_group.sql` – Admins können Kinder direkt und atomar einer passenden aktiven Zeitgruppe zuweisen oder zwischen solchen Zeitgruppen verschieben
 - `20260821125500_admin_parent_accounts.sql` – Adminprofile behalten zusätzlich die Elternrolle und können im getrennten Elternbereich ausschließlich ihre eigenen Kinder verwalten
 - `20260821131500_lesson_pdf_documents.sql` – mehrere geschützte PDF-Dokumente pro Lektion, Adminverwaltung und eingebetteter Reader für berechtigte Familien
+- `20260823100000_remove_completed_session_quiz_release_requirement.sql` – Quizfreigaben setzen nur noch eine freigegebene veröffentlichte Lektion voraus und sind unabhängig vom Live-Terminstatus
+- `20260823103000_require_child_birth_date.sql` – verpflichtendes Geburtsdatum für neue und geänderte Kinderprofile ohne erfundene Backfill-Daten
+- `20260823110000_notify_parent_on_time_group_approval.sql` – automatische persönliche Elternmitteilung bei einer neuen Zeitgruppenfreischaltung
 
 Alle genannten Migrationen sind auf dem aktuell verknüpften Supabase-Projekt ausgeführt. Remote-Schema-Lint war danach fehlerfrei.
 
@@ -463,8 +466,9 @@ Bereits funktional umgesetzt:
 - vollständiges leeres Datenbankschema mit RLS
 - responsive App-Shell für Web und Mobile
 - CRUD für Kinderprofile, Akademiejahre, Lernreisen, Lektionen, Zeitgruppen und Live-Termine
-- verpflichtende Auswahl einer zur Altersgruppe passenden Zeitgruppe beim Anlegen oder Bearbeiten eines Kindes; die Anfrage wird erst durch einen Admin wirksam
+- verpflichtendes Geburtsdatum sowie verpflichtende Auswahl einer zur Altersgruppe passenden Zeitgruppe beim Anlegen oder Bearbeiten eines Kindes; nach der Anfrage weist eine Bestätigung auf die noch ausstehende Admin-Freischaltung hin
 - mehrere Zeitgruppen teilen die Inhalte ihrer Altersgruppe, während Inhalte verschiedener Altersgruppen getrennt bleiben
+- Admins können bei offenen Zeitgruppenanfragen die angefragte Gruppe freischalten, die Anfrage ablehnen oder das Kind direkt einer anderen passenden aktiven Zeitgruppe zuweisen
 - Admin-CRUD für frei verwaltbare Altersgruppen im Curriculum
 - anklickbare Akademiejahre im Curriculum; beim Einstieg ist kein Jahr vorausgewählt und Lernreisen bleiben verborgen, bis ein Jahr bewusst geöffnet wurde. Danach werden sie nach geöffnetem Jahr und gewählter Altersgruppe gefiltert und direkt dort bearbeitet
 - Lektionseditor für Einstiegstext, mehrere Admin-PDFs, geplanten Live-Zoom-Termin und separates Multiple-Choice-Quiz
@@ -479,6 +483,7 @@ Bereits funktional umgesetzt:
 - Textantworten und Challenge-Bestätigungen
 - extern erstellte Zoom-Teilnehmerlinks und Replay-Links aus Supabase; keine automatische Zoom-Meeting-Erstellung und kein eingebetteter Zoom-Client
 - Mitteilungen an alle, einzelne Profile oder Zeitgruppen
+- automatische persönliche Mitteilung an das Elternkonto, sobald ein Kind für eine Zeitgruppe freigeschaltet wurde
 - kompakte Mitteilungsübersicht mit Titel/erstem Satz und separater Detailansicht
 - Abzeichenverwaltung und persönliche Verleihung
 - Abgabenübersicht für das Akademieteam

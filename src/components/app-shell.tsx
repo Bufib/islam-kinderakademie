@@ -1,21 +1,24 @@
-import { Href, usePathname, useRouter } from 'expo-router';
-import { PropsWithChildren, useMemo } from 'react';
+import { Href, usePathname, useRouter } from "expo-router";
+import { PropsWithChildren, useMemo } from "react";
 import {
   Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
-import { BrandMark } from '@/components/brand-mark';
-import { AppIcon, AppIconName } from '@/components/ui/app-icon';
-import { AppText, Pill } from '@/components/ui/primitives';
-import { Layout, Palette, Radius, Space } from '@/constants/design';
-import { useAcademy } from '@/context/academy-context';
-import { useAuth } from '@/context/auth-context';
-import { UserRole } from '@/types/academy';
+import { BrandMark } from "@/components/brand-mark";
+import { AppIcon, AppIconName } from "@/components/ui/app-icon";
+import { AppText, Pill } from "@/components/ui/primitives";
+import { Layout, Palette, Radius, Space } from "@/constants/design";
+import { useAcademy } from "@/context/academy-context";
+import { useAuth } from "@/context/auth-context";
+import { UserRole } from "@/types/academy";
 
 type NavItem = {
   label: string;
@@ -28,28 +31,75 @@ type NavItem = {
 
 const roleNavigation: Record<UserRole, NavItem[]> = {
   child: [
-    { label: 'Übersicht', shortLabel: 'Start', icon: 'home', href: '/dashboard' },
-    { label: 'Lernreisen', icon: 'journeys', href: '/lernreisen' },
-    { label: 'Kalender', icon: 'calendar', href: '/kalender' },
-    { label: 'Islam-Pass', shortLabel: 'Pass', icon: 'pass', href: '/islam-pass' },
+    {
+      label: "Übersicht",
+      shortLabel: "Start",
+      icon: "home",
+      href: "/dashboard",
+    },
+    { label: "Lernreisen", icon: "journeys", href: "/lernreisen" },
+    { label: "Kalender", icon: "calendar", href: "/kalender" },
+    {
+      label: "Islam-Pass",
+      shortLabel: "Pass",
+      icon: "pass",
+      href: "/islam-pass",
+    },
   ],
   parent: [
-    { label: 'Übersicht', shortLabel: 'Start', icon: 'home', href: '/dashboard' },
-    { label: 'Meine Kinder', shortLabel: 'Kinder', icon: 'children', href: '/kinder' },
-    { label: 'Kalender', icon: 'calendar', href: '/kalender' },
-    { label: 'Mitteilungen', shortLabel: 'Mitteilungen', icon: 'messages', href: '/mitteilungen' },
+    {
+      label: "Übersicht",
+      shortLabel: "Start",
+      icon: "home",
+      href: "/dashboard",
+    },
+    {
+      label: "Meine Kinder",
+      shortLabel: "Kinder",
+      icon: "children",
+      href: "/kinder",
+    },
+    { label: "Kalender", icon: "calendar", href: "/kalender" },
+    {
+      label: "Mitteilungen",
+      shortLabel: "Mitteilungen",
+      icon: "messages",
+      href: "/mitteilungen",
+    },
   ],
   team: [
-    { label: 'Übersicht', shortLabel: 'Start', icon: 'dashboard', href: '/dashboard' },
-    { label: 'Konten & Rollen', shortLabel: 'Konten', icon: 'profile', href: '/konten', adminOnly: true, mobile: false },
-    { label: 'Curriculum', shortLabel: 'Plan', icon: 'curriculum', href: '/curriculum' },
-    { label: 'Lektionen', icon: 'lessons', href: '/lektionen' },
-    { label: 'Kalender', icon: 'calendar', href: '/kalender' },
-    { label: 'Mitteilungen', shortLabel: 'Mitteilungen', icon: 'messages', href: '/mitteilungen' },
-    { label: 'Zeitgruppen', icon: 'groups', href: '/gruppen', mobile: false },
-    { label: 'Medien', icon: 'media', href: '/medien', mobile: false },
-    { label: 'Abzeichen', icon: 'trophy', href: '/abzeichen', mobile: false },
-    { label: 'Abgaben', icon: 'check', href: '/abgaben', mobile: false },
+    {
+      label: "Übersicht",
+      shortLabel: "Start",
+      icon: "dashboard",
+      href: "/dashboard",
+    },
+    {
+      label: "Konten & Rollen",
+      shortLabel: "Konten",
+      icon: "profile",
+      href: "/konten",
+      adminOnly: true,
+      mobile: false,
+    },
+    {
+      label: "Curriculum",
+      shortLabel: "Plan",
+      icon: "curriculum",
+      href: "/curriculum",
+    },
+    { label: "Lektionen", icon: "lessons", href: "/lektionen" },
+    { label: "Kalender", icon: "calendar", href: "/kalender" },
+    {
+      label: "Mitteilungen",
+      shortLabel: "Mitteilungen",
+      icon: "messages",
+      href: "/mitteilungen",
+    },
+    { label: "Zeitgruppen", icon: "groups", href: "/gruppen", mobile: false },
+    { label: "Medien", icon: "media", href: "/medien", mobile: false },
+    { label: "Abzeichen", icon: "trophy", href: "/abzeichen", mobile: false },
+    { label: "Abgaben", icon: "check", href: "/abgaben", mobile: false },
   ],
 };
 
@@ -57,56 +107,61 @@ type RoleMeta = {
   label: string;
   description: string;
   icon: AppIconName;
-  tone: 'mint' | 'sun' | 'sky' | 'coral';
+  tone: "mint" | "sun" | "sky" | "coral";
 };
 
 const roleMeta: Record<UserRole, RoleMeta> = {
   child: {
-    label: 'Kinderansicht',
-    description: 'Lernen und Fortschritt',
-    icon: 'profile',
-    tone: 'sun',
+    label: "Kinderansicht",
+    description: "Lernen und Fortschritt",
+    icon: "profile",
+    tone: "sun",
   },
   parent: {
-    label: 'Elternbereich',
-    description: 'Begleiten und verwalten',
-    icon: 'children',
-    tone: 'mint',
+    label: "Elternbereich",
+    description: "Begleiten und verwalten",
+    icon: "children",
+    tone: "mint",
   },
   team: {
-    label: 'Team-Bereich',
-    description: 'Programm und Inhalte',
-    icon: 'dashboard',
-    tone: 'sky',
+    label: "Team-Bereich",
+    description: "Programm und Inhalte",
+    icon: "dashboard",
+    tone: "sky",
   },
 };
 
 const adminRoleMeta: RoleMeta = {
-  label: 'Administration',
-  description: 'Konten und Plattform',
-  icon: 'settings',
-  tone: 'coral',
+  label: "Administration",
+  description: "Konten und Plattform",
+  icon: "settings",
+  tone: "coral",
 };
 
 const pageTitles: Record<string, string> = {
-  '/dashboard': 'Übersicht',
-  '/lernreisen': 'Lernreisen',
-  '/kalender': 'Kalender',
-  '/islam-pass': 'Mein Islam-Pass',
-  '/kinder': 'Meine Kinder',
-  '/mitteilungen': 'Mitteilungen',
-  '/curriculum': 'Curriculum',
-  '/lektionen': 'Lektionen',
-  '/lektion-neu': 'Neue Lektion',
-  '/gruppen': 'Zeitgruppen',
-  '/medien': 'Medien',
-  '/abzeichen': 'Abzeichen',
-  '/abgaben': 'Abgaben',
-  '/konten': 'Konten & Rollen',
-  '/account': 'Mein Account',
+  "/dashboard": "Übersicht",
+  "/lernreisen": "Lernreisen",
+  "/kalender": "Kalender",
+  "/islam-pass": "Mein Islam-Pass",
+  "/kinder": "Meine Kinder",
+  "/mitteilungen": "Mitteilungen",
+  "/curriculum": "Curriculum",
+  "/lektionen": "Lektionen",
+  "/lektion-neu": "Neue Lektion",
+  "/gruppen": "Zeitgruppen",
+  "/medien": "Medien",
+  "/abzeichen": "Abzeichen",
+  "/abgaben": "Abgaben",
+  "/konten": "Konten & Rollen",
+  "/account": "Mein Account",
 };
 
-const publicPaths = new Set(['/', '/login', '/register', '/passwort-vergessen']);
+const publicPaths = new Set([
+  "/",
+  "/login",
+  "/register",
+  "/passwort-vergessen",
+]);
 
 export function AppShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
@@ -122,57 +177,62 @@ export function AppShell({ children }: PropsWithChildren) {
   const { profile } = useAuth();
   const router = useRouter();
   const desktop = width >= Layout.desktopBreakpoint;
-  const isAdmin = activeRole === 'team' && profile?.role === 'admin';
-  const isLessonFlow = pathname.startsWith('/lektion/') || pathname.startsWith('/quiz/');
+  const isAdmin = activeRole === "team" && profile?.role === "admin";
+  const isLessonFlow =
+    pathname.startsWith("/lektion/") || pathname.startsWith("/quiz/");
   const currentRoleMeta = isAdmin ? adminRoleMeta : roleMeta[activeRole];
   const navItems = useMemo(
-    () => roleNavigation[activeRole].filter((item) => !item.adminOnly || isAdmin),
-    [activeRole, isAdmin]
+    () =>
+      roleNavigation[activeRole].filter((item) => !item.adminOnly || isAdmin),
+    [activeRole, isAdmin],
   );
   const canShowAccountAreaSwitch =
-    canSwitchAccountArea && activeRole !== 'child';
+    canSwitchAccountArea && activeRole !== "child";
   const accountAreaSwitch = canShowAccountAreaSwitch
     ? {
         label:
-          activeRole === 'team'
-            ? 'Zum Elternbereich'
-            : 'Zur Administration',
-        icon: (activeRole === 'team' ? 'children' : 'dashboard') as AppIconName,
+          activeRole === "team" ? "Zum Elternbereich" : "Zur Administration",
+        icon: (activeRole === "team" ? "children" : "dashboard") as AppIconName,
         onPress: () => {
-          if (activeRole === 'team') {
+          if (activeRole === "team") {
             enterParentArea();
           } else {
             enterTeamArea();
           }
-          router.replace('/dashboard' as Href);
+          router.replace("/dashboard" as Href);
         },
       }
     : undefined;
 
   if (publicPaths.has(pathname)) {
     return (
-      <SafeAreaView style={styles.publicSafeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={styles.publicSafeArea}
+        edges={["top", "left", "right"]}
+      >
         {children}
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.app}>
         {desktop && (
           <Sidebar
             meta={currentRoleMeta}
             navItems={navItems}
             pathname={pathname}
-            accountLabel={activeRole === 'child' ? 'Zum Elternbereich' : 'Mein Account'}
+            accountLabel={
+              activeRole === "child" ? "Zum Elternbereich" : "Mein Account"
+            }
             accountAreaSwitch={accountAreaSwitch}
             onOpenAccount={() => {
-              if (activeRole === 'child') {
+              if (activeRole === "child") {
                 exitChildArea();
-                router.replace('/dashboard' as Href);
+                router.replace("/dashboard" as Href);
               } else {
-                router.push('/account' as Href);
+                router.push("/account" as Href);
               }
             }}
           />
@@ -181,30 +241,40 @@ export function AppShell({ children }: PropsWithChildren) {
         <View style={styles.main}>
           <TopBar
             compact={!desktop}
-            pageTitle={pathname.startsWith('/lektion/') ? 'Lektion' : pathname.startsWith('/quiz/') ? 'Quiz' : pathname.startsWith('/mitteilung/') ? 'Mitteilung' : pageTitles[pathname] ?? 'Islam-Kinderakademie'}
+            pageTitle={
+              pathname.startsWith("/lektion/")
+                ? "Lektion"
+                : pathname.startsWith("/quiz/")
+                  ? "Quiz"
+                  : pathname.startsWith("/mitteilung/")
+                    ? "Mitteilung"
+                    : (pageTitles[pathname] ?? "Islam-Kinderakademie")
+            }
             meta={currentRoleMeta}
             onGoBack={
               isLessonFlow
                 ? () => {
                     if (router.canGoBack()) {
                       router.back();
-                    } else if (pathname.startsWith('/quiz/')) {
-                      router.replace(pathname.replace('/quiz/', '/lektion/') as Href);
+                    } else if (pathname.startsWith("/quiz/")) {
+                      router.replace(
+                        pathname.replace("/quiz/", "/lektion/") as Href,
+                      );
                     } else {
-                      router.replace('/lernreisen' as Href);
+                      router.replace("/lernreisen" as Href);
                     }
                   }
                 : undefined
             }
             onOpenAccount={() => {
-              if (activeRole === 'child') {
+              if (activeRole === "child") {
                 exitChildArea();
-                router.replace('/dashboard' as Href);
+                router.replace("/dashboard" as Href);
               } else {
-                router.push('/account' as Href);
+                router.push("/account" as Href);
               }
             }}
-            onOpenNotifications={() => router.push('/mitteilungen' as Href)}
+            onOpenNotifications={() => router.push("/mitteilungen" as Href)}
             accountAreaSwitch={accountAreaSwitch}
           />
           <View style={styles.routeContent}>{children}</View>
@@ -218,7 +288,6 @@ export function AppShell({ children }: PropsWithChildren) {
           />
         )}
       </View>
-
     </SafeAreaView>
   );
 }
@@ -247,16 +316,25 @@ function Sidebar({
       <ScrollView
         style={styles.sidebarScroll}
         contentContainerStyle={styles.sidebarContent}
-        showsVerticalScrollIndicator>
+        showsVerticalScrollIndicator
+      >
         <View style={styles.sidebarBrand}>
           <BrandMark style={styles.sidebarBrandImage} />
         </View>
         <View style={styles.sidebarNav}>
-          <AppText variant="label" color={Palette.mintStrong} style={styles.navLabel}>
+          <AppText
+            variant="label"
+            color={Palette.mintStrong}
+            style={styles.navLabel}
+          >
             Navigation
           </AppText>
           {navItems.map((item) => (
-            <NavigationLink key={item.href} item={item} active={isPathActive(pathname, item.href)} />
+            <NavigationLink
+              key={item.href}
+              item={item}
+              active={isPathActive(pathname, item.href)}
+            />
           ))}
         </View>
 
@@ -268,7 +346,8 @@ function Sidebar({
               style={({ pressed }) => [
                 styles.accountAreaSwitch,
                 pressed && styles.pressed,
-              ]}>
+              ]}
+            >
               <View style={styles.accountAreaSwitchIcon}>
                 <AppIcon
                   name={accountAreaSwitch.icon}
@@ -277,7 +356,11 @@ function Sidebar({
                 />
               </View>
               <View style={styles.prototypeCopy}>
-                <AppText variant="bodyStrong" color={Palette.white}>
+                <AppText
+                  variant="bodyStrong"
+                  color={Palette.white}
+                  style={{ fontSize: 14 }}
+                >
                   {accountAreaSwitch.label}
                 </AppText>
                 <AppText variant="small" color={Palette.mintStrong}>
@@ -287,32 +370,31 @@ function Sidebar({
               <AppIcon name="arrow" size={18} color={Palette.mintStrong} />
             </Pressable>
           )}
-          <View style={styles.prototypeNote}>
-            <View style={styles.prototypeIcon}>
-              <AppIcon name="lock" size={17} color={Palette.sun} />
-            </View>
-            <View style={styles.prototypeCopy}>
-              <AppText variant="small" color={Palette.white} style={styles.prototypeTitle}>
-                Geschützter Bereich
-              </AppText>
-              <AppText variant="small" color={Palette.mintStrong}>
-                Mit Supabase verbunden
-              </AppText>
-            </View>
-          </View>
 
           <Pressable
             accessibilityRole="button"
             onPress={onOpenAccount}
-            style={({ pressed }) => [styles.sidebarRole, pressed && styles.pressed]}>
+            style={({ pressed }) => [
+              styles.sidebarRole,
+              pressed && styles.pressed,
+            ]}
+          >
             <View style={styles.roleAvatar}>
               <AppIcon name={meta.icon} size={20} color={Palette.ink} />
             </View>
             <View style={styles.roleCopy}>
-              <AppText variant="bodyStrong" color={Palette.white} numberOfLines={1}>
+              <AppText
+                variant="bodyStrong"
+                color={Palette.white}
+                numberOfLines={1}
+              >
                 {meta.label}
               </AppText>
-              <AppText variant="small" color={Palette.mintStrong} numberOfLines={1}>
+              <AppText
+                variant="small"
+                color={Palette.mintStrong}
+                numberOfLines={1}
+              >
                 {accountLabel}
               </AppText>
             </View>
@@ -335,7 +417,8 @@ function NavigationLink({ item, active }: { item: NavItem; active: boolean }) {
         styles.navItem,
         active && styles.navItemActive,
         pressed && styles.pressed,
-      ]}>
+      ]}
+    >
       <View style={[styles.navIcon, active && styles.navIconActive]}>
         <AppIcon
           name={item.icon}
@@ -345,8 +428,9 @@ function NavigationLink({ item, active }: { item: NavItem; active: boolean }) {
       </View>
       <AppText
         variant="bodyStrong"
-        color={active ? Palette.white : '#D7E7DF'}
-        style={styles.navItemText}>
+        color={active ? Palette.white : "#D7E7DF"}
+        style={styles.navItemText}
+      >
         {item.label}
       </AppText>
       {active && <View style={styles.activeDot} />}
@@ -383,7 +467,11 @@ function TopBar({
             accessibilityRole="button"
             accessibilityLabel="Zurück"
             onPress={onGoBack}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && styles.pressed,
+            ]}
+          >
             <View style={styles.backIcon}>
               <AppIcon name="arrow" size={19} color={Palette.ink} />
             </View>
@@ -392,7 +480,13 @@ function TopBar({
         {compact && !onGoBack ? (
           <BrandMark dark />
         ) : (
-          <AppText variant="bodyStrong" numberOfLines={1} style={styles.topTitle}>{pageTitle}</AppText>
+          <AppText
+            variant="bodyStrong"
+            numberOfLines={1}
+            style={styles.topTitle}
+          >
+            {pageTitle}
+          </AppText>
         )}
       </View>
       <View style={styles.topActions}>
@@ -402,22 +496,35 @@ function TopBar({
             accessibilityRole="button"
             accessibilityLabel={accountAreaSwitch.label}
             onPress={accountAreaSwitch.onPress}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <AppIcon name={accountAreaSwitch.icon} size={20} color={Palette.ink} />
+            style={({ pressed }) => [
+              styles.iconButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <AppIcon
+              name={accountAreaSwitch.icon}
+              size={20}
+              color={Palette.ink}
+            />
           </Pressable>
         )}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Mitteilungen öffnen"
           onPress={onOpenNotifications}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          style={({ pressed }) => [
+            styles.iconButton,
+            pressed && styles.pressed,
+          ]}
+        >
           <AppIcon name="bell" size={20} color={Palette.ink} />
         </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Mein Account öffnen"
           onPress={onOpenAccount}
-          style={({ pressed }) => [styles.topAvatar, pressed && styles.pressed]}>
+          style={({ pressed }) => [styles.topAvatar, pressed && styles.pressed]}
+        >
           <AppIcon name={meta.icon} size={20} color={Palette.ink} />
         </Pressable>
       </View>
@@ -437,32 +544,46 @@ function MobileNavigation({
   const router = useRouter();
 
   return (
-    <View style={[styles.mobileNav, { paddingBottom: Math.max(bottomInset, 8) }]}>
-      {navItems.filter((item) => item.mobile !== false).map((item) => {
-        const active = isPathActive(pathname, item.href);
-        return (
-          <Pressable
-            key={item.href}
-            accessibilityRole="link"
-            onPress={() => router.push(item.href as Href)}
-            style={({ pressed }) => [styles.mobileNavItem, pressed && styles.pressed]}>
-            <View style={[styles.mobileNavIcon, active && styles.mobileNavIconActive]}>
-              <AppIcon
-                name={item.icon}
-                size={19}
-                color={active ? Palette.white : Palette.muted}
-              />
-            </View>
-            <AppText
-              variant="small"
-              color={active ? Palette.forest : Palette.muted}
-              numberOfLines={1}
-              style={styles.mobileNavLabel}>
-              {item.shortLabel ?? item.label}
-            </AppText>
-          </Pressable>
-        );
-      })}
+    <View
+      style={[styles.mobileNav, { paddingBottom: Math.max(bottomInset, 8) }]}
+    >
+      {navItems
+        .filter((item) => item.mobile !== false)
+        .map((item) => {
+          const active = isPathActive(pathname, item.href);
+          return (
+            <Pressable
+              key={item.href}
+              accessibilityRole="link"
+              onPress={() => router.push(item.href as Href)}
+              style={({ pressed }) => [
+                styles.mobileNavItem,
+                pressed && styles.pressed,
+              ]}
+            >
+              <View
+                style={[
+                  styles.mobileNavIcon,
+                  active && styles.mobileNavIconActive,
+                ]}
+              >
+                <AppIcon
+                  name={item.icon}
+                  size={19}
+                  color={active ? Palette.white : Palette.muted}
+                />
+              </View>
+              <AppText
+                variant="small"
+                color={active ? Palette.forest : Palette.muted}
+                numberOfLines={1}
+                style={styles.mobileNavLabel}
+              >
+                {item.shortLabel ?? item.label}
+              </AppText>
+            </Pressable>
+          );
+        })}
     </View>
   );
 }
@@ -474,24 +595,24 @@ function isPathActive(pathname: string, href: string) {
 const styles = StyleSheet.create({
   publicSafeArea: {
     flex: 1,
-    width: '100%',
+    width: "100%",
     backgroundColor: Palette.cream,
   },
   safeArea: {
     flex: 1,
-    width: '100%',
-    maxWidth: '100%',
+    width: "100%",
+    maxWidth: "100%",
     backgroundColor: Palette.forestDark,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   app: {
     flex: 1,
     minHeight: 0,
-    width: '100%',
-    maxWidth: '100%',
-    flexDirection: 'row',
+    width: "100%",
+    maxWidth: "100%",
+    flexDirection: "row",
     backgroundColor: Palette.cream,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   sidebar: {
     width: Layout.sidebarWidth,
@@ -499,11 +620,11 @@ const styles = StyleSheet.create({
     maxWidth: Layout.sidebarWidth,
     flexShrink: 0,
     backgroundColor: Palette.forestDark,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   sidebarScroll: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   sidebarContent: {
     flexGrow: 1,
@@ -516,8 +637,8 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   sidebarBrand: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   sidebarBrandImage: {
     width: 156,
@@ -528,21 +649,21 @@ const styles = StyleSheet.create({
   },
   navItem: {
     minHeight: 50,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     borderRadius: Radius.medium,
     gap: Space.md,
   },
   navItemActive: {
-    backgroundColor: 'rgba(255,255,255,0.09)',
+    backgroundColor: "rgba(255,255,255,0.09)",
   },
   navIcon: {
     width: 32,
     height: 32,
     borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   navIconActive: {
     backgroundColor: Palette.sun,
@@ -557,58 +678,58 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.sun,
   },
   sidebarBottom: {
-    marginTop: 'auto',
+    marginTop: "auto",
     gap: Space.md,
   },
   prototypeNote: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Space.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
+    borderColor: "rgba(255,255,255,0.09)",
     borderRadius: Radius.medium,
     padding: Space.md,
-    backgroundColor: 'rgba(255,255,255,0.035)',
+    backgroundColor: "rgba(255,255,255,0.035)",
   },
   accountAreaSwitch: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Space.sm,
     padding: Space.md,
     borderWidth: 1,
-    borderColor: 'rgba(167,213,190,0.28)',
+    borderColor: "rgba(167,213,190,0.28)",
     borderRadius: Radius.medium,
-    backgroundColor: 'rgba(167,213,190,0.10)',
+    backgroundColor: "rgba(167,213,190,0.10)",
   },
   accountAreaSwitchIcon: {
     width: 36,
     height: 36,
     borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Palette.sun,
   },
   prototypeIcon: {
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: 'rgba(242,201,109,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(242,201,109,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   prototypeCopy: {
     flex: 1,
-    marginBottom: 5
+    marginBottom: 5,
   },
   prototypeTitle: {
-    fontWeight: '700',
+    fontWeight: "700",
   },
   sidebarRole: {
     minHeight: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Space.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.09)',
+    borderTopColor: "rgba(255,255,255,0.09)",
     paddingTop: Space.md,
   },
   roleAvatar: {
@@ -616,8 +737,8 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 14,
     backgroundColor: Palette.sun,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   roleCopy: {
     flex: 1,
@@ -626,21 +747,21 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     minWidth: 0,
-    maxWidth: '100%',
-    overflow: 'hidden',
+    maxWidth: "100%",
+    overflow: "hidden",
   },
   routeContent: {
     flex: 1,
     minHeight: 0,
     minWidth: 0,
-    maxWidth: '100%',
-    overflow: 'hidden',
+    maxWidth: "100%",
+    overflow: "hidden",
   },
   topBar: {
     height: 68,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Space.xxl,
     backgroundColor: Palette.paper,
     borderBottomWidth: 1,
@@ -650,14 +771,14 @@ const styles = StyleSheet.create({
   topBarCompact: {
     height: 64,
     paddingHorizontal: Space.lg,
-    width: '100%',
-    maxWidth: '100%',
+    width: "100%",
+    maxWidth: "100%",
   },
   topHeading: {
     flex: 1,
     minWidth: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Space.sm,
   },
   topTitle: {
@@ -670,17 +791,17 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Palette.line,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Palette.white,
   },
   backIcon: {
-    transform: [{ rotate: '180deg' }],
+    transform: [{ rotate: "180deg" }],
   },
   topActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     flexShrink: 0,
     gap: Space.sm,
   },
@@ -690,8 +811,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Palette.line,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Palette.white,
   },
   topAvatar: {
@@ -699,71 +820,71 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 14,
     backgroundColor: Palette.sun,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   mobileNav: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     minHeight: 72,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-around",
     paddingTop: 8,
     paddingHorizontal: 6,
     backgroundColor: Palette.paper,
     borderTopWidth: 1,
     borderTopColor: Palette.line,
-    boxShadow: '0 -4px 18px rgba(23, 61, 58, 0.08)',
+    boxShadow: "0 -4px 18px rgba(23, 61, 58, 0.08)",
     zIndex: 10,
   },
   mobileNavItem: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 3,
   },
   mobileNavIcon: {
     width: 36,
     height: 32,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   mobileNavIconActive: {
     backgroundColor: Palette.forest,
   },
   mobileNavLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   modalBackdrop: {
     flex: 1,
     backgroundColor: Palette.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: Space.lg,
   },
   modalCard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 480,
     backgroundColor: Palette.paper,
     borderRadius: Radius.xLarge,
     padding: Space.xl,
-    boxShadow: '0 14px 30px rgba(23, 61, 58, 0.18)',
+    boxShadow: "0 14px 30px rgba(23, 61, 58, 0.18)",
   },
   notificationCard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 440,
     backgroundColor: Palette.paper,
     borderRadius: Radius.xLarge,
     padding: Space.xl,
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: Space.lg,
   },
   modalHeaderCopy: {
@@ -774,9 +895,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 13,
-    backgroundColor: '#EEF1EF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#EEF1EF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   roleOptions: {
     marginTop: Space.xl,
@@ -784,8 +905,8 @@ const styles = StyleSheet.create({
   },
   roleOption: {
     minHeight: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Space.md,
     borderWidth: 1,
     borderColor: Palette.line,
@@ -794,15 +915,15 @@ const styles = StyleSheet.create({
   },
   roleOptionSelected: {
     borderColor: Palette.mintStrong,
-    backgroundColor: '#F0F7F3',
+    backgroundColor: "#F0F7F3",
   },
   roleOptionIcon: {
     width: 42,
     height: 42,
     borderRadius: 15,
     backgroundColor: Palette.mint,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   roleOptionIconSelected: {
     backgroundColor: Palette.forest,
@@ -811,9 +932,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationEmpty: {
-    alignItems: 'center',
+    alignItems: "center",
     minHeight: 230,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: Space.xl,
   },
   notificationEmptyIcon: {
@@ -821,12 +942,12 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 20,
     backgroundColor: Palette.mint,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: Space.md,
   },
   centerText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 4,
   },
   pressed: {

@@ -61,13 +61,13 @@ export function apiErrorMessage(error: unknown) {
   const raw = error instanceof Error ? error.message : String(error);
   const normalized = raw.toLowerCase();
   if (normalized.includes('row-level security')) return 'Für diese Aktion fehlt die erforderliche Berechtigung.';
+  if (normalized.includes('children_birth_date_required_check')) return 'Bitte gib das Geburtsdatum des Kindes an.';
   if (normalized.includes('duplicate key')) return 'Dieser Eintrag existiert bereits.';
   if (normalized.includes('foreign key')) return 'Der Eintrag wird noch an anderer Stelle verwendet.';
   if (normalized.includes('last admin')) return 'Der letzte Admin kann die eigene Adminrolle nicht entfernen.';
   if (normalized.includes('admin role required')) return 'Für diese Aktion ist eine Adminrolle erforderlich.';
   if (normalized.includes('lesson must be published before release')) return 'Die Lektion muss zuerst den Status „Veröffentlicht“ haben.';
   if (normalized.includes('lesson must be released before quiz')) return 'Gib zuerst die Lektion frei.';
-  if (normalized.includes('completed live session required before quiz release')) return 'Das Quiz kann erst freigegeben werden, nachdem der Live-Termin als „Beendet“ markiert wurde.';
   if (normalized.includes('lesson not found')) return 'Die Lektion wurde nicht gefunden.';
   if (normalized.includes('quiz not found')) return 'Das Quiz wurde nicht gefunden.';
   if (normalized.includes('invalid account role')) return 'Die ausgewählte Kontorolle ist ungültig.';

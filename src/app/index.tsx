@@ -94,7 +94,6 @@ export default function LandingScreen() {
           </View>
           <View style={[styles.trustRow, small && styles.trustRowSmall]}>
             <TrustItem icon="video" label="Live per Zoom" />
-            <TrustItem icon="lock" label="Geschützter Bereich" />
             <TrustItem icon="children" label="Für Familien" />
           </View>
         </View>

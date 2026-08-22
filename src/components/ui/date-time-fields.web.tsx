@@ -8,7 +8,9 @@ type DateTimeFieldProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
   minimum?: string;
+  maximum?: string;
 };
 
 function WebPickerField({
@@ -16,20 +18,42 @@ function WebPickerField({
   value,
   onChange,
   type,
+  placeholder,
   minimum,
+  maximum,
 }: DateTimeFieldProps & { type: 'date' | 'time' }) {
   return (
     <View style={{ gap: 7 }}>
       <AppText variant="label">{label}</AppText>
-      <input
-        aria-label={label}
-        type={type}
-        value={value}
-        min={minimum}
-        step={type === 'time' ? 300 : undefined}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.currentTarget.value)}
-        style={inputStyle}
-      />
+      <View style={{ position: 'relative' }}>
+        <input
+          aria-label={label}
+          type={type}
+          value={value}
+          placeholder={placeholder}
+          min={minimum}
+          max={maximum}
+          step={type === 'time' ? 300 : undefined}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.currentTarget.value)}
+          style={{
+            ...inputStyle,
+            color: placeholder && !value ? 'transparent' : Palette.ink,
+          }}
+        />
+        {placeholder && !value && (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: 14,
+              justifyContent: 'center',
+            }}>
+            <AppText color={Palette.muted}>{placeholder}</AppText>
+          </View>
+        )}
+      </View>
     </View>
   );
 }

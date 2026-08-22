@@ -10,6 +10,7 @@ import {
   FormDialog,
   RowActions,
 } from "@/components/ui/data-ui";
+import { DateField } from "@/components/ui/date-time-fields";
 import {
   ActionButton,
   AppText,
@@ -32,7 +33,7 @@ import {
 } from "@/lib/academy-api";
 import type { ChildRow, GroupMemberRow } from "@/types/database";
 import { apiErrorMessage } from "@/utils/format";
-import { confirmAction } from "@/utils/feedback";
+import { confirmAction, showMessage } from "@/utils/feedback";
 
 type Gender = "male" | "female";
 
@@ -51,6 +52,11 @@ const emptyForm: ChildForm = {
   timeGroupId: null,
   gender: null,
 };
+
+function localDateToday() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
 
 export default function ChildrenScreen() {
   const router = useRouter();
@@ -149,15 +155,16 @@ export default function ChildrenScreen() {
   }
 
   async function save() {
-    if (
-      !form.displayName.trim() ||
-      !form.ageGroupId ||
-      !form.timeGroupId ||
-      !form.gender
-    ) {
-      setFormError(
-        "Bitte gib einen Anzeigenamen ein und wähle Altersgruppe, Zeitgruppe sowie Geschlecht.",
-      );
+    const missingFields: string[] = [];
+
+    if (!form.displayName.trim()) missingFields.push("Anzeigename");
+    if (!form.ageGroupId) missingFields.push("Altersgruppe");
+    if (!form.timeGroupId) missingFields.push("Zeitgruppe");
+    if (!form.gender) missingFields.push("Geschlecht");
+    if (!form.birthDate) missingFields.push("Geburtsdatum");
+
+    if (missingFields.length > 0) {
+      setFormError(`Bitte ergänze noch:\n• ${missingFields.join("\n• ")}`);
       return;
     }
 
@@ -177,6 +184,13 @@ export default function ChildrenScreen() {
     setSaving(true);
     setFormError(null);
 
+    const previousMembership = editing
+      ? currentMembership(editing.id)
+      : undefined;
+    const waitsForAdminApproval =
+      previousMembership?.group_id !== form.timeGroupId ||
+      previousMembership.membership_status !== "approved";
+
     try {
       if (!parentProfileId) {
         await ensureCurrentProfileId();
@@ -187,7 +201,7 @@ export default function ChildrenScreen() {
         saveChildWithTimeGroupRequest({
           id: editing?.id,
           displayName: form.displayName,
-          birthDate: form.birthDate || null,
+          birthDate: form.birthDate,
           ageGroupId: form.ageGroupId!,
           timeGroupId: form.timeGroupId!,
           gender: form.gender!,
@@ -198,6 +212,13 @@ export default function ChildrenScreen() {
       );
 
       setDialogOpen(false);
+
+      if (waitsForAdminApproval) {
+        showMessage(
+          "Zeitgruppe angefragt",
+          `Die Zeitgruppe „${selectedTimeGroup.name}“ wurde für ${form.displayName.trim()} angefragt. Bitte warte, bis ein Admin sie freischaltet.`,
+        );
+      }
     } catch (reason) {
       setFormError(apiErrorMessage(reason));
     } finally {
@@ -378,6 +399,13 @@ export default function ChildrenScreen() {
                         }{" "}
                         Lektionen abgeschlossen
                       </AppText>
+
+                      {membership?.membership_status === "pending" && (
+                        <AppText variant="small" color={Palette.inkSoft}>
+                          Die Zeitgruppe ist angefragt. Bitte warte auf die
+                          Freischaltung durch einen Admin.
+                        </AppText>
+                      )}
                     </View>
 
                     <View
@@ -593,17 +621,17 @@ export default function ChildrenScreen() {
           ]}
         />
 
-        <Field
-          label="Geburtsdatum (optional)"
-          placeholder="JJJJ-MM-TT"
+        <DateField
+          label="Geburtsdatum *"
           value={form.birthDate}
-          onChangeText={(birthDate) =>
+          placeholder="TT.MM.JJJJ"
+          maximum={localDateToday()}
+          onChange={(birthDate) =>
             setForm((current) => ({
               ...current,
               birthDate,
             }))
           }
-          helper="Format: 2018-05-24"
         />
       </FormDialog>
     </PageScaffold>

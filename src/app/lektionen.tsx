@@ -424,9 +424,6 @@ export default function LessonsScreen() {
                     const isExpanded = expandedLessonIds.includes(lesson.id);
                     const session = data.liveSessions.find((entry) => entry.lesson_id === lesson.id);
                     const quiz = data.quizzes.find((entry) => entry.lesson_id === lesson.id);
-                    const hasCompletedSession = data.liveSessions.some(
-                      (entry) => entry.lesson_id === lesson.id && entry.status === 'completed'
-                    );
                     const questionCount = quiz
                       ? data.quizQuestions.filter((question) => question.quiz_id === quiz.id).length
                       : 0;
@@ -519,7 +516,7 @@ export default function LessonsScreen() {
                                     variant="secondary"
                                     disabled={
                                       releaseAction !== null ||
-                                      (!quiz.is_published && (!lesson.is_released || !hasCompletedSession))
+                                      (!quiz.is_published && !lesson.is_released)
                                     }
                                     onPress={() => void toggleQuizRelease(quiz.id, quiz.title, quiz.is_published)}
                                   />
@@ -529,9 +526,9 @@ export default function LessonsScreen() {
                                     Vor der Freigabe muss der Status „Veröffentlicht“ sein.
                                   </AppText>
                                 )}
-                                {quiz && !quiz.is_published && (!lesson.is_released || !hasCompletedSession) && (
+                                {quiz && !quiz.is_published && !lesson.is_released && (
                                   <AppText variant="small" color={Palette.muted}>
-                                    Das Quiz folgt nach Lektionsfreigabe und einem als „Beendet“ markierten Live-Termin.
+                                    Gib zuerst die veröffentlichte Lektion frei.
                                   </AppText>
                                 )}
                               </View>
