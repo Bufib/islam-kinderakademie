@@ -27,7 +27,7 @@ Das Projekt ist eine funktionierende Supabase-gestützte Lernplattform. Als fach
 - TypeScript mit aktiviertem Strict Mode
 - Supabase für Auth, PostgreSQL und privaten Storage
 - `@supabase/supabase-js`
-- AsyncStorage für persistente native Supabase-Sitzungen
+- Expo SecureStore für verschlüsselte native Supabase-Sitzungen; AsyncStorage bleibt nur für die einmalige Migration älterer Sitzungen installiert
 - `react-native-url-polyfill`
 - `@react-native-community/datetimepicker` für native Datums- und Zeitauswahl
 
@@ -54,7 +54,7 @@ GitHub Pages:
 - Expo-Unterpfad: `experiments.baseUrl = "/islam-kinderakademy"`
 - Workflow: `.github/workflows/deploy-pages.yml`
 - Deployment-Branch: `erweiterung` (ein Push auf diesen Branch veröffentlicht die aktuelle Web-App)
-- Der Workflow erwartet die Repository-Secrets `EXPO_PUBLIC_SUPABASE_URL` und `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- Der Workflow erwartet die Repository-Secrets `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` und `EXPO_PUBLIC_HCAPTCHA_SITE_KEY`.
 
 Supabase:
 
@@ -74,6 +74,8 @@ Die App erwartet eine lokale `.env` mit:
 ```env
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+EXPO_PUBLIC_HCAPTCHA_SITE_KEY=
+EXPO_PUBLIC_HCAPTCHA_BASE_URL=https://bufib.github.io
 ```
 
 Vorlage: `.env.example`.
@@ -81,6 +83,7 @@ Vorlage: `.env.example`.
 Verbindliche Regeln:
 
 - Nur den Supabase Publishable Key beziehungsweise alten `anon`-Key im Client verwenden.
+- Der hCaptcha-Sitekey ist öffentlich und darf im Client stehen. Der hCaptcha-Secret-Key darf ausschließlich unter **Authentication → Attack Protection → CAPTCHA Protection** im Supabase-Dashboard hinterlegt werden. Nur ein separat gestarteter lokaler Supabase-Auth-Dienst verwendet `SUPABASE_AUTH_CAPTCHA_SECRET`; diese Variable gehört nicht in die App-`.env`.
 - Niemals `service_role`, Secret Keys, Datenbankpasswörter oder andere Server-Secrets in Expo-Code oder Git speichern.
 - `.env` ist absichtlich über `.gitignore` ausgeschlossen.
 - Nach Änderungen an `.env` den Expo-Prozess vollständig neu starten.
@@ -144,6 +147,12 @@ Unterstützte Abläufe:
 - Account nach erneuter Passwortbestätigung endgültig löschen
 - Passwort-Wiederherstellungslink per E-Mail anfordern
 - Fallback auf Metadaten des Auth-Nutzers, falls das Profil nicht geladen werden kann
+
+Auf iOS und Android speichert `src/lib/secure-session-storage.native.ts` die Supabase-Sitzung ausschließlich in kleinen, verschlüsselten Expo-SecureStore-Blöcken. Dadurch werden auch Sessions unterstützt, die für einen einzelnen SecureStore-Wert zu groß sind. Eine bestehende Klartext-Sitzung aus AsyncStorage wird beim ersten Lesen übernommen und anschließend dort gelöscht. Neue oder aktualisierte Session-Tokens dürfen nicht auf AsyncStorage zurückfallen. Der Browser verwendet weiterhin den von `supabase-js` vorgesehenen Web-Storage.
+
+Supabase-hCaptcha ist ein globaler Auth-Schutz. Registrierung, Anmeldung, Passwort-Reset und die erneute Passwortbestätigung vor der Accountlöschung müssen deshalb immer ein frisches `captchaToken` mitsenden. Ein Token wird nach jedem Auth-Aufruf zurückgesetzt und darf nicht wiederverwendet werden. Web verwendet `@hcaptcha/react-hcaptcha`, iOS und Android verwenden `@hcaptcha/react-native-hcaptcha` über die bereits installierte Expo-WebView.
+
+Neue und geänderte Passwörter benötigen mindestens 12 Zeichen sowie je einen Kleinbuchstaben, Großbuchstaben, eine Zahl und ein Sonderzeichen. Die Regel liegt zentral in `src/utils/password.ts` und muss im gehosteten Supabase-Projekt unter **Authentication → Password security** identisch konfiguriert bleiben. Clientprüfung allein gilt nicht als Sicherheitsgrenze.
 
 Wiederholte Supabase-Auth-Ereignisse für denselben Nutzer, etwa `SIGNED_IN` oder `TOKEN_REFRESHED` beim Fokuswechsel eines Browser-Tabs, dürfen weder das React-Sessionobjekt ersetzen noch das Profil erneut laden. Dadurch darf die geschützte App beim Zurückwechseln nicht neu rendern oder in den globalen Ladebildschirm springen. Änderungen am Nutzer sowie Abmeldung und Kontowechsel werden weiterhin übernommen.
 

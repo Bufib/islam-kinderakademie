@@ -11,7 +11,7 @@ Web-first Lernplattform der Islam-Kinderakademie auf Basis von Expo 57, React Na
 - responsive Desktop- und Mobilnavigation
 - öffentliche Werbe-Startseite sowie Registrierung und Anmeldung
 - geschützte Akademie-Routen mit Expo Router
-- Supabase-Sitzungsspeicherung für Web, iOS und Android
+- Supabase-Sitzungsspeicherung im Browser sowie verschlüsselt über Expo SecureStore auf iOS und Android
 - Accountbereich mit Profil-, Passwort-, sicherer Lösch- und Abmeldefunktion
 - separates Admin-Dashboard mit Konten- und Rollenverwaltung
 - Admins können mit demselben Konto zwischen Administration und einem auf die eigenen Kinder begrenzten Elternbereich wechseln
@@ -19,7 +19,7 @@ Web-first Lernplattform der Islam-Kinderakademie auf Basis von Expo 57, React Na
 - hierarchische Lektionsverwaltung nach Akademiejahr → Lernreise → Lektion mit Filtern sowie Admin-Sammelfreigabe
 - frei verwaltbare Altersgruppen und anklickbare Akademiejahre; Lernreisen bleiben verborgen, bis ein Jahr ausgewählt wurde
 - kalender- und zeitgestützte Planung von Live-Terminen
-- zweistufige Admin-Freigabe für Lektionen und die Quizze nach beendetem Live-Termin
+- getrennte Admin-Freigabe für Lektionen und Quizze; die Quizfreigabe ist unabhängig vom Live-Terminstatus
 - Supabase-Datenschicht für CRUD, Lernfortschritt, Abgaben und Medien
 - verpflichtende Zahlungsart und Name des verwendeten PayPal- oder Bankkontos bei der Registrierung sowie eine geschützte Admin-Zahlungsübersicht
 - mehrere Zeitgruppen pro Altersgruppe mit verpflichtender Elternanfrage und Admin-Freigabe; Lernreisen sind sofort sichtbar, ihre Inhalte erst nach der Freigabe
@@ -38,9 +38,15 @@ cp .env.example .env
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://DEIN-PROJEKT.supabase.co
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=DEIN_PUBLISHABLE_KEY
+EXPO_PUBLIC_HCAPTCHA_SITE_KEY=DEIN_HCAPTCHA_SITEKEY
+EXPO_PUBLIC_HCAPTCHA_BASE_URL=https://bufib.github.io
 ```
 
-In der App darf nur der Publishable Key verwendet werden, niemals der `service_role`-Key.
+In der App dürfen nur der Supabase-Publishable-Key und der öffentliche hCaptcha-Sitekey verwendet werden. Der `service_role`-Key und der hCaptcha-Secret-Key dürfen niemals im Client landen. Der hCaptcha-Secret-Key gehört ausschließlich in die CAPTCHA-Konfiguration des gehosteten Supabase-Projekts. Nur für einen separat gestarteten lokalen Supabase-Auth-Dienst wird `SUPABASE_AUTH_CAPTCHA_SECRET` benötigt; diese Variable gehört nicht in die App-`.env`.
+
+Für hCaptcha einen eigenen Sitekey anlegen und die Produktionsdomain freigeben. Anschließend in **Supabase → Authentication → Attack Protection → CAPTCHA Protection** hCaptcha auswählen, den hCaptcha-Secret-Key eintragen und den Schutz aktivieren. Supabase prüft CAPTCHA global auf Registrierung, Anmeldung und Passwort-Reset; die App sendet deshalb bei allen drei Abläufen sowie bei der erneuten Anmeldung vor einer Accountlöschung ein frisches Token.
+
+Unter **Supabase → Authentication → Password security** zusätzlich mindestens 12 Zeichen sowie die stärkste Zeichenanforderung mit Klein-/Großbuchstaben, Zahlen und Sonderzeichen einstellen. Falls der Tarif es unterstützt, außerdem die Prüfung gegen bekannte geleakte Passwörter aktivieren. Die gleichen Regeln sind im Client und für die lokale Supabase-Instanz bereits hinterlegt.
 
 2. Die Migration auf das verknüpfte Supabase-Projekt anwenden:
 
@@ -66,7 +72,7 @@ Die Migration `20260814065000_academy_2026_27_curriculum.sql` entfernt die früh
 
 Die Migration `20260814070000_lesson_live_quizzes.sql` ergänzt den aktuellen Lektionsablauf aus Einstiegstext, geplantem Live-Unterricht und Multiple-Choice-Quiz. Richtige Antworten sind von den sichtbaren Antwortmöglichkeiten getrennt und werden ausschließlich durch eine geschützte Supabase-Funktion ausgewertet.
 
-Die Migration `20260815080000_manual_lesson_quiz_release.sql` ergänzt den Freigabe-Workflow. Lektionen müssen den Status `published` haben und werden anschließend manuell durch einen Admin freigegeben. Das zugehörige Quiz kann erst separat freigegeben werden, wenn die Lektion sichtbar und mindestens ein Live-Termin als `completed` markiert ist. Wird eine Lektion gesperrt oder wieder zum Entwurf, wird auch ihr Quiz gesperrt.
+Die Migration `20260815080000_manual_lesson_quiz_release.sql` ergänzt den Freigabe-Workflow. Lektionen müssen den Status `published` haben und werden anschließend manuell durch einen Admin freigegeben. Wird eine Lektion gesperrt oder wieder zum Entwurf, wird auch ihr Quiz gesperrt. Die spätere Migration `20260823100000_remove_completed_session_quiz_release_requirement.sql` hebt die historische Live-Termin-Voraussetzung auf: Ein Quiz kann separat freigegeben werden, sobald seine veröffentlichte Lektion freigegeben ist.
 
 Die Migration `20260815100000_dynamic_age_groups.sql` überführt Altersgruppen in eine eigene Tabelle. Admins können sie unter **Curriculum & Altersgruppen** anlegen, bearbeiten und löschen, solange sie nicht von Kindern, Lernreisen oder Zeitgruppen verwendet werden.
 
@@ -128,9 +134,10 @@ Im GitHub-Repository müssen unter **Settings → Secrets and variables → Acti
 ```text
 EXPO_PUBLIC_SUPABASE_URL
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+EXPO_PUBLIC_HCAPTCHA_SITE_KEY
 ```
 
-Nur den Publishable Key verwenden, niemals den `service_role`-Key. Unter **Settings → Pages → Build and deployment** anschließend als Quelle **GitHub Actions** auswählen.
+Nur den Publishable Key und den öffentlichen hCaptcha-Sitekey verwenden, niemals den `service_role`- oder hCaptcha-Secret-Key. Unter **Settings → Pages → Build and deployment** anschließend als Quelle **GitHub Actions** auswählen.
 
 In Supabase unter **Authentication → URL Configuration → Redirect URLs** ergänzen:
 

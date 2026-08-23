@@ -11,7 +11,19 @@ export function translateAuthError(message: string) {
     return 'Für diese E-Mail-Adresse gibt es bereits ein Konto.';
   }
   if (normalized.includes('password should be at least')) {
-    return 'Das Passwort erfüllt die Mindestlänge von Supabase nicht.';
+    return 'Das Passwort erfüllt die Sicherheitsregeln nicht.';
+  }
+  if (
+    normalized.includes('password should contain') ||
+    normalized.includes('weak password')
+  ) {
+    return 'Das Passwort erfüllt die Sicherheitsregeln nicht.';
+  }
+  if (
+    normalized.includes('captcha') ||
+    normalized.includes('challenge')
+  ) {
+    return 'Die hCaptcha-Prüfung ist abgelaufen oder ungültig. Bitte bestätige sie erneut.';
   }
   if (normalized.includes('rate limit')) {
     return 'Zu viele Versuche. Bitte warte kurz und versuche es erneut.';

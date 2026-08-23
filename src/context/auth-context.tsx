@@ -14,6 +14,7 @@ import { AppState, Platform } from 'react-native';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { PaymentMethod } from '@/types/database';
+import { validatePassword } from '@/utils/password';
 
 export type AccountRole = 'parent' | 'teacher' | 'admin';
 
@@ -50,6 +51,7 @@ type AuthContextValue = {
   signIn: (
     email: string,
     password: string,
+    captchaToken: string,
   ) => Promise<AuthActionResult>;
 
   signUp: (
@@ -57,10 +59,12 @@ type AuthContextValue = {
     email: string,
     password: string,
     payment: SignUpPayment,
+    captchaToken: string,
   ) => Promise<SignUpResult>;
 
   requestPasswordReset: (
     email: string,
+    captchaToken: string,
   ) => Promise<AuthActionResult>;
 
   signOut: () => Promise<AuthActionResult>;
@@ -399,6 +403,7 @@ export function AuthProvider({
     async (
       email: string,
       password: string,
+      captchaToken: string,
     ): Promise<AuthActionResult> => {
       if (!supabase) {
         return {
@@ -407,11 +412,20 @@ export function AuthProvider({
         };
       }
 
+      if (!captchaToken) {
+        return {
+          error: 'Bitte bestätige zuerst die hCaptcha-Prüfung.',
+        };
+      }
+
       const { error } =
         await supabase.auth.signInWithPassword(
           {
             email,
             password,
+            options: {
+              captchaToken,
+            },
           },
         );
 
@@ -429,6 +443,7 @@ export function AuthProvider({
       email: string,
       password: string,
       payment: SignUpPayment,
+      captchaToken: string,
     ): Promise<SignUpResult> => {
       if (!supabase) {
         return {
@@ -436,6 +451,22 @@ export function AuthProvider({
             'Supabase ist noch nicht konfiguriert.',
           needsEmailConfirmation:
             false,
+        };
+      }
+
+      const passwordValidation = validatePassword(password);
+
+      if (!passwordValidation.isValid) {
+        return {
+          error: passwordValidation.message,
+          needsEmailConfirmation: false,
+        };
+      }
+
+      if (!captchaToken) {
+        return {
+          error: 'Bitte bestätige zuerst die hCaptcha-Prüfung.',
+          needsEmailConfirmation: false,
         };
       }
 
@@ -487,6 +518,7 @@ export function AuthProvider({
           password,
 
           options: {
+            captchaToken,
             emailRedirectTo:
               authRedirectUrl(),
 
@@ -558,11 +590,18 @@ export function AuthProvider({
     useCallback(
       async (
         email: string,
+        captchaToken: string,
       ): Promise<AuthActionResult> => {
         if (!supabase) {
           return {
             error:
               'Supabase ist noch nicht konfiguriert.',
+          };
+        }
+
+        if (!captchaToken) {
+          return {
+            error: 'Bitte bestätige zuerst die hCaptcha-Prüfung.',
           };
         }
 
@@ -574,6 +613,7 @@ export function AuthProvider({
                 authRedirectUrl(
                   '/account',
                 ),
+              captchaToken,
             },
           );
 

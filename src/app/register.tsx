@@ -1,7 +1,9 @@
 import { Href, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { AuthCaptcha } from "@/components/auth/auth-captcha";
+import type { AuthCaptchaHandle } from "@/components/auth/auth-captcha.types";
 import {
   AuthField,
   AuthLayout,
@@ -10,11 +12,20 @@ import {
 import { ActionButton, AppText } from "@/components/ui/primitives";
 import { Palette, Radius, Space } from "@/constants/design";
 import { useAuth } from "@/context/auth-context";
+import {
+  hCaptchaSiteKey,
+  isHCaptchaConfigured,
+} from "@/lib/hcaptcha";
 import type { PaymentMethod } from "@/types/database";
 import { translateAuthError } from "@/utils/auth-errors";
+import {
+  PASSWORD_REQUIREMENTS_TEXT,
+  validatePassword,
+} from "@/utils/password";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const captchaRef = useRef<AuthCaptchaHandle>(null);
   const { signUp, isAuthenticated, isConfigured } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
@@ -27,6 +38,7 @@ export default function RegisterScreen() {
     null,
   );
   const [payerName, setPayerName] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -54,8 +66,10 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      setError("Das Passwort muss mindestens 8 Zeichen lang sein.");
+    const passwordValidation = validatePassword(password);
+
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.message);
       return;
     }
 
@@ -92,13 +106,31 @@ export default function RegisterScreen() {
       return;
     }
 
+    if (!isHCaptchaConfigured) {
+      setError("hCaptcha ist noch nicht konfiguriert.");
+      return;
+    }
+
+    if (!captchaToken) {
+      setError("Bitte bestätige zuerst die hCaptcha-Prüfung.");
+      return;
+    }
+
     setSubmitting(true);
 
-    const result = await signUp(normalizedName, normalizedEmail, password, {
-      paymentMethod,
-      paymentAccepted,
-      payerName: normalizedPayerName,
-    });
+    const result = await signUp(
+      normalizedName,
+      normalizedEmail,
+      password,
+      {
+        paymentMethod,
+        paymentAccepted,
+        payerName: normalizedPayerName,
+      },
+      captchaToken,
+    );
+
+    captchaRef.current?.reset();
 
     setSubmitting(false);
 
@@ -166,6 +198,13 @@ export default function RegisterScreen() {
           </InlineNotice>
         )}
 
+        {!isHCaptchaConfigured && (
+          <InlineNotice tone="info">
+            hCaptcha ist noch nicht konfiguriert. Hinterlege den öffentlichen
+            Sitekey, bevor Registrierungen freigeschaltet werden.
+          </InlineNotice>
+        )}
+
         {error && <InlineNotice>{error}</InlineNotice>}
 
         <AuthField
@@ -194,7 +233,7 @@ export default function RegisterScreen() {
 
         <AuthField
           label="Passwort"
-          placeholder="Mindestens 8 Zeichen"
+          placeholder="Mindestens 12 Zeichen"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -203,6 +242,10 @@ export default function RegisterScreen() {
           textContentType="newPassword"
           returnKeyType="next"
         />
+
+        <AppText variant="small" color={Palette.muted}>
+          {PASSWORD_REQUIREMENTS_TEXT}
+        </AppText>
 
         <AuthField
           label="Passwort wiederholen"
@@ -360,6 +403,17 @@ export default function RegisterScreen() {
           </Pressable>
         </View>
 
+        {isHCaptchaConfigured && (
+          <AuthCaptcha
+            ref={captchaRef}
+            siteKey={hCaptchaSiteKey}
+            verified={Boolean(captchaToken)}
+            disabled={submitting}
+            onTokenChange={setCaptchaToken}
+            onError={setError}
+          />
+        )}
+
         <ActionButton
           label={submitting ? "Konto wird erstellt …" : "Konto erstellen"}
           icon="arrow"
@@ -368,7 +422,9 @@ export default function RegisterScreen() {
             !isConfigured ||
             !paymentAccepted ||
             !paymentMethod ||
-            payerName.trim().length < 2
+            payerName.trim().length < 2 ||
+            !isHCaptchaConfigured ||
+            !captchaToken
           }
           onPress={() => void submit()}
           style={styles.submitButton}

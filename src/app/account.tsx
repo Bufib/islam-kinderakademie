@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 
+import { AuthCaptcha } from "@/components/auth/auth-captcha";
+import type { AuthCaptchaHandle } from "@/components/auth/auth-captcha.types";
 import { AppIcon } from "@/components/ui/app-icon";
 import { ErrorBanner, FormDialog } from "@/components/ui/data-ui";
 import {
@@ -15,9 +17,17 @@ import { Layout, Palette, Radius, Space } from "@/constants/design";
 import { useAcademyData } from "@/context/academy-data-context";
 import { AccountRole, useAuth } from "@/context/auth-context";
 import { updateRecord } from "@/lib/academy-api";
+import {
+  hCaptchaSiteKey,
+  isHCaptchaConfigured,
+} from "@/lib/hcaptcha";
 import { supabase } from "@/lib/supabase";
 import { translateAuthError } from "@/utils/auth-errors";
 import { apiErrorMessage } from "@/utils/format";
+import {
+  PASSWORD_REQUIREMENTS_TEXT,
+  validatePassword,
+} from "@/utils/password";
 
 const roleLabels: Record<AccountRole, string> = {
   parent: "Elternkonto",
@@ -31,6 +41,7 @@ type DeleteAccountResponse = {
 };
 
 export default function AccountScreen() {
+  const deleteCaptchaRef = useRef<AuthCaptchaHandle>(null);
   const { width } = useWindowDimensions();
   const compact = width < Layout.compactBreakpoint;
 
@@ -50,6 +61,9 @@ export default function AccountScreen() {
   const [password, setPassword] = useState("");
   const [passwordRepeat, setPasswordRepeat] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
+  const [deleteCaptchaToken, setDeleteCaptchaToken] = useState<string | null>(
+    null,
+  );
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -93,6 +107,7 @@ export default function AccountScreen() {
 
   function openDeleteDialog() {
     setDeletePassword("");
+    setDeleteCaptchaToken(null);
     setFormError(null);
     setDeleteDialog(true);
   }
@@ -138,8 +153,10 @@ export default function AccountScreen() {
   }
 
   async function savePassword() {
-    if (password.length < 8) {
-      setFormError("Das neue Passwort muss mindestens 8 Zeichen lang sein.");
+    const passwordValidation = validatePassword(password);
+
+    if (!passwordValidation.isValid) {
+      setFormError(passwordValidation.message);
       return;
     }
 
@@ -200,6 +217,16 @@ export default function AccountScreen() {
       return;
     }
 
+    if (!isHCaptchaConfigured) {
+      setFormError("hCaptcha ist noch nicht konfiguriert.");
+      return;
+    }
+
+    if (!deleteCaptchaToken) {
+      setFormError("Bitte bestätige zuerst die hCaptcha-Prüfung.");
+      return;
+    }
+
     setDeleting(true);
     setFormError(null);
 
@@ -214,7 +241,12 @@ export default function AccountScreen() {
         await supabase.auth.signInWithPassword({
           email: user.email,
           password: deletePassword,
+          options: {
+            captchaToken: deleteCaptchaToken,
+          },
         });
+
+      deleteCaptchaRef.current?.reset();
 
       if (reauthenticationError) {
         throw new Error(translateAuthError(reauthenticationError.message));
@@ -502,7 +534,8 @@ export default function AccountScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          placeholder="Mindestens 8 Zeichen"
+          placeholder="Mindestens 12 Zeichen"
+          helper={PASSWORD_REQUIREMENTS_TEXT}
         />
 
         <Field
@@ -527,10 +560,15 @@ export default function AccountScreen() {
             setDeleteDialog(false);
             setFormError(null);
             setDeletePassword("");
+            deleteCaptchaRef.current?.reset();
           }
         }}
         onSave={() => void deleteAccount()}
-        saveDisabled={!deletePassword}
+        saveDisabled={
+          !deletePassword ||
+          !isHCaptchaConfigured ||
+          !deleteCaptchaToken
+        }
       >
         {formError && <ErrorBanner message={formError} />}
 
@@ -557,6 +595,21 @@ export default function AccountScreen() {
           returnKeyType="done"
           onSubmitEditing={() => void deleteAccount()}
         />
+
+        {!isHCaptchaConfigured && (
+          <ErrorBanner message="hCaptcha ist noch nicht konfiguriert." />
+        )}
+
+        {isHCaptchaConfigured && (
+          <AuthCaptcha
+            ref={deleteCaptchaRef}
+            siteKey={hCaptchaSiteKey}
+            verified={Boolean(deleteCaptchaToken)}
+            disabled={deleting}
+            onTokenChange={setDeleteCaptchaToken}
+            onError={setFormError}
+          />
+        )}
       </FormDialog>
     </PageScaffold>
   );
