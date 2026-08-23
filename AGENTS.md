@@ -141,6 +141,7 @@ Unterstützte Abläufe:
 - automatische Wiederherstellung der Sitzung beim Appstart
 - Abmelden
 - Profilname und Passwort ändern
+- Account nach erneuter Passwortbestätigung endgültig löschen
 - Passwort-Wiederherstellungslink per E-Mail anfordern
 - Fallback auf Metadaten des Auth-Nutzers, falls das Profil nicht geladen werden kann
 
@@ -155,6 +156,8 @@ Beim Registrieren schreibt die App `display_name`, `payment_method`, `payment_pa
 3. eine aktive `payment_agreements`-Zahlungsvereinbarung mit dem serverseitig festgelegten Monatsbeitrag von 14,99 Euro.
 
 Der Name des Zahlungskontos ist bei neuen Registrierungen verpflichtend und bezeichnet bei PayPal den PayPal-Kontonamen beziehungsweise bei Banküberweisung den Namen des Kontoinhabers. Es werden keine IBAN, Kontonummern oder PayPal-Zugangsdaten erfasst. Nur Admins dürfen Zahlungsvereinbarungen und Monatszahlungen lesen. Vor Einführung des Feldes angelegte Bestandsvereinbarungen können noch keinen Zahlernamen enthalten.
+
+Die Accountlöschung läuft ausschließlich über die Edge Function `delete-account`. Der Client bestätigt davor E-Mail und Passwort erneut; die Function akzeptiert nur eine höchstens zehn Minuten alte Anmeldung und ermittelt die User-ID aus dem serverseitig validierten Bearer-Token. Beim Löschen wird die Zahlungsvereinbarung vom Auth-Nutzer getrennt, der Zahlername anonymisiert und die Vereinbarung beendet. Die Buchungshistorie bleibt bestehen. Das letzte Admin-Konto kann weder über die App noch direkt über die Auth-Administration gelöscht werden.
 
 Supabase verwaltet eigentliche Auth-Nutzer in `auth.users`. Niemals eine eigene Passworttabelle anlegen.
 
@@ -411,6 +414,9 @@ Zentrale RLS-Helfer:
 - `is_academy_staff()`
 - `owns_child(child_id)`
 - `can_access_group(group_id)`
+- `can_child_access_lesson(child_id, lesson_id)`
+- `can_child_access_lesson_step(child_id, lesson_step_id)`
+- `can_child_access_quiz(child_id, quiz_id)`
 - `save_child_with_time_group_request(...)`
 - `review_time_group_request(group_member_id, decision)`
 - `list_admin_accounts()`
@@ -446,6 +452,8 @@ Aktueller relevanter Stand:
 - `20260823100000_remove_completed_session_quiz_release_requirement.sql` – Quizfreigaben setzen nur noch eine freigegebene veröffentlichte Lektion voraus und sind unabhängig vom Live-Terminstatus
 - `20260823103000_require_child_birth_date.sql` – verpflichtendes Geburtsdatum für neue und geänderte Kinderprofile ohne erfundene Backfill-Daten
 - `20260823110000_notify_parent_on_time_group_approval.sql` – automatische persönliche Elternmitteilung bei einer neuen Zeitgruppenfreischaltung
+- `20260823120000_harden_account_deletion.sql` – sichere Accountlöschung mit Schutz des letzten Admins sowie Anonymisierung und Erhalt der Zahlungshistorie
+- `20260823121000_bind_learning_writes_to_lessons.sql` – bindet Quizversuche, Fortschritt und Abgaben an die konkret freigegebene Lektion, Altersgruppe und das Akademiejahr
 
 Alle genannten Migrationen sind auf dem aktuell verknüpften Supabase-Projekt ausgeführt. Remote-Schema-Lint war danach fehlerfrei.
 
@@ -461,7 +469,7 @@ Bereits funktional umgesetzt:
 - E-Mail-Bestätigungsablauf
 - Protected Routes nach Anmeldung und UI-Rolle
 - rollenabhängiger Eltern-, Kinder- und Teambereich
-- Accountansicht, Profilbearbeitung, Passwortänderung und Abmelden
+- Accountansicht, Profilbearbeitung, Passwortänderung, sichere Accountlöschung und Abmelden
 - Passwort-Wiederherstellung per Supabase-E-Mail
 - vollständiges leeres Datenbankschema mit RLS
 - responsive App-Shell für Web und Mobile

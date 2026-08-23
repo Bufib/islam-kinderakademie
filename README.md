@@ -12,7 +12,7 @@ Web-first Lernplattform der Islam-Kinderakademie auf Basis von Expo 57, React Na
 - öffentliche Werbe-Startseite sowie Registrierung und Anmeldung
 - geschützte Akademie-Routen mit Expo Router
 - Supabase-Sitzungsspeicherung für Web, iOS und Android
-- Accountbereich mit Profil-, Passwort- und Abmeldefunktionen
+- Accountbereich mit Profil-, Passwort-, sicherer Lösch- und Abmeldefunktion
 - separates Admin-Dashboard mit Konten- und Rollenverwaltung
 - Admins können mit demselben Konto zwischen Administration und einem auf die eigenen Kinder begrenzten Elternbereich wechseln
 - durchsuchbare Themen- und Quizverwaltung im Admin-Dashboard zum Bearbeiten vorhandener Lektionen sowie zum Anlegen und Bearbeiten von Multiple-Choice-Fragen
@@ -85,6 +85,18 @@ Die Migration `20260821123500_admin_assign_child_time_group.sql` erlaubt Admins,
 Die Migration `20260821125500_admin_parent_accounts.sql` macht die Administration zu einer zusätzlichen Rolle: Admins behalten ein normales Elternkonto für ihre eigenen Kinder und können in der App zwischen Administration und Elternbereich wechseln.
 
 Die Migration `20260821131500_lesson_pdf_documents.sql` ergänzt mehrere PDF-Dokumente pro Lektion. Nur Admins können sie einer Lektion zuordnen oder entfernen. Der private Storage-Pfad und die Metadaten sind für Familien nur lesbar, wenn auch die veröffentlichte Lektion freigegeben ist und eine passende genehmigte Zeitgruppe besteht. Die Lektionsseite zeigt die Dokumente über kurzlebige signierte URLs in einem eingebetteten Reader.
+
+Die Migration `20260823120000_harden_account_deletion.sql` ermöglicht eine vollständige Auth-Accountlöschung, ohne aufbewahrte Buchungshistorie zu verlieren: Zahlungsvereinbarungen werden beendet, vom Nutzer getrennt und beim Zahlernamen anonymisiert. Das letzte Admin-Konto ist vor einer Löschung geschützt.
+
+Die Migration `20260823121000_bind_learning_writes_to_lessons.sql` bindet Quizversuche, Lektions- und Schrittfortschritt sowie Abgaben an die konkret freigegebene Lektion. Ein Kind benötigt eine genehmigte Zeitgruppe derselben Altersgruppe und desselben Akademiejahres; eine beliebige andere Gruppenfreigabe genügt nicht.
+
+Die Accountlöschung benötigt zusätzlich die Edge Function. Sie validiert den Bearer-Token selbst und akzeptiert nur eine unmittelbar zuvor per Passwort bestätigte Sitzung:
+
+```bash
+npx supabase functions deploy delete-account --no-verify-jwt
+```
+
+`verify_jwt` ist für diesen Endpunkt bewusst auf Plattformebene deaktiviert, damit aktuelle Publishable Keys unterstützt werden. Ohne gültigen, durch `auth.getUser()` geprüften User-Token wird der Service-Role-Löschpfad nicht erreicht.
 
 3. Unter **Authentication → URL Configuration** die URLs freigeben:
 

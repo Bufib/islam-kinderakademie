@@ -49,6 +49,7 @@ export default function AccountScreen() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [passwordRepeat, setPasswordRepeat] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -91,6 +92,7 @@ export default function AccountScreen() {
   }
 
   function openDeleteDialog() {
+    setDeletePassword("");
     setFormError(null);
     setDeleteDialog(true);
   }
@@ -188,10 +190,36 @@ export default function AccountScreen() {
       return;
     }
 
+    if (!user.email) {
+      setFormError("Für diesen Account ist keine E-Mail-Adresse hinterlegt.");
+      return;
+    }
+
+    if (!deletePassword) {
+      setFormError("Bitte bestätige die Löschung mit deinem Passwort.");
+      return;
+    }
+
     setDeleting(true);
     setFormError(null);
 
     try {
+      /*
+       * Vor dieser endgültigen Aktion wird die Anmeldung bewusst erneut
+       * bestätigt. Die Edge Function akzeptiert anschließend nur eine frisch
+       * bestätigte Sitzung und ermittelt die User-ID ausschließlich aus dem
+       * serverseitig validierten Access Token.
+       */
+      const { error: reauthenticationError } =
+        await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: deletePassword,
+        });
+
+      if (reauthenticationError) {
+        throw new Error(translateAuthError(reauthenticationError.message));
+      }
+
       /*
        * Wir benötigen ausschließlich den Access Token.
        *
@@ -288,6 +316,7 @@ export default function AccountScreen() {
       }
 
       setDeleteDialog(false);
+      setDeletePassword("");
     } catch (reason) {
       console.error("Account deletion failed:", reason);
 
@@ -497,9 +526,11 @@ export default function AccountScreen() {
           if (!deleting) {
             setDeleteDialog(false);
             setFormError(null);
+            setDeletePassword("");
           }
         }}
         onSave={() => void deleteAccount()}
+        saveDisabled={!deletePassword}
       >
         {formError && <ErrorBanner message={formError} />}
 
@@ -513,6 +544,19 @@ export default function AccountScreen() {
             diesem Account nicht mehr anmelden.
           </AppText>
         </View>
+
+        <Field
+          label="Passwort zur Bestätigung"
+          value={deletePassword}
+          onChangeText={setDeletePassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoComplete="current-password"
+          textContentType="password"
+          placeholder="Dein aktuelles Passwort"
+          returnKeyType="done"
+          onSubmitEditing={() => void deleteAccount()}
+        />
       </FormDialog>
     </PageScaffold>
   );
