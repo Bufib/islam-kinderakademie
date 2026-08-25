@@ -73,6 +73,8 @@ function RootNavigator() {
           }}
         >
           <Stack.Screen name="index" />
+          <Stack.Screen name="impressum" />
+          <Stack.Screen name="datenschutz" />
 
           <Stack.Protected guard={!isAuthenticated}>
             <Stack.Screen name="login" />

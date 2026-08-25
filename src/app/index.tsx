@@ -198,6 +198,24 @@ export default function LandingScreen() {
         <AppText variant="small" color={Palette.muted}>
           © {new Date().getFullYear()} Islam-Kinderakademie
         </AppText>
+        <View style={styles.footerLinks}>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => open('/impressum')}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <AppText variant="small" color={Palette.forest} style={styles.footerLinkText}>
+              Impressum
+            </AppText>
+          </Pressable>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => open('/datenschutz')}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <AppText variant="small" color={Palette.forest} style={styles.footerLinkText}>
+              Datenschutz
+            </AppText>
+          </Pressable>
+        </View>
       </View>
     </ScrollView>
   );
@@ -473,7 +491,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Space.xxl,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: Palette.line,
   },
@@ -486,5 +504,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Space.md,
   },
+  footerLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: Space.xl },
+  footerLinkText: { textDecorationLine: 'underline' },
   pressed: { opacity: 0.72 },
 });

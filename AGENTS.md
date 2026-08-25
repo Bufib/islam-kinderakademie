@@ -138,6 +138,8 @@ Der Einstieg liegt in `src/app/_layout.tsx`.
 - `/login` – Anmeldung
 - `/register` – Registrierung
 - `/passwort-vergessen` – Passwort-Wiederherstellung
+- `/impressum` – öffentlicher, ausdrücklich unvollständiger Impressumsplatzhalter
+- `/datenschutz` – öffentlicher, ausdrücklich unvollständiger Datenschutzplatzhalter
 
 Geschützte Routen:
 

@@ -103,6 +103,21 @@ const roleNavigation: Record<UserRole, NavItem[]> = {
   ],
 };
 
+const legalNavigation: NavItem[] = [
+  {
+    label: "Impressum",
+    icon: "lessons",
+    href: "/impressum",
+    mobile: false,
+  },
+  {
+    label: "Datenschutz",
+    icon: "lock",
+    href: "/datenschutz",
+    mobile: false,
+  },
+];
+
 type RoleMeta = {
   label: string;
   description: string;
@@ -154,6 +169,8 @@ const pageTitles: Record<string, string> = {
   "/abgaben": "Abgaben",
   "/konten": "Konten & Rollen",
   "/account": "Mein Account",
+  "/impressum": "Impressum",
+  "/datenschutz": "Datenschutz",
 };
 
 const publicPaths = new Set([
@@ -161,7 +178,11 @@ const publicPaths = new Set([
   "/login",
   "/register",
   "/passwort-vergessen",
+  "/impressum",
+  "/datenschutz",
 ]);
+
+const legalPaths = new Set(["/impressum", "/datenschutz"]);
 
 export function AppShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
@@ -174,7 +195,7 @@ export function AppShell({ children }: PropsWithChildren) {
     enterTeamArea,
     exitChildArea,
   } = useAcademy();
-  const { profile } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
   const router = useRouter();
   const desktop = width >= Layout.desktopBreakpoint;
   const isAdmin = activeRole === "team" && profile?.role === "admin";
@@ -182,8 +203,12 @@ export function AppShell({ children }: PropsWithChildren) {
     pathname.startsWith("/lektion/") || pathname.startsWith("/quiz/");
   const currentRoleMeta = isAdmin ? adminRoleMeta : roleMeta[activeRole];
   const navItems = useMemo(
-    () =>
-      roleNavigation[activeRole].filter((item) => !item.adminOnly || isAdmin),
+    () => [
+      ...roleNavigation[activeRole].filter(
+        (item) => !item.adminOnly || isAdmin,
+      ),
+      ...legalNavigation,
+    ],
     [activeRole, isAdmin],
   );
   const canShowAccountAreaSwitch =
@@ -204,7 +229,11 @@ export function AppShell({ children }: PropsWithChildren) {
       }
     : undefined;
 
-  if (publicPaths.has(pathname)) {
+  const usesPublicShell =
+    publicPaths.has(pathname) &&
+    (!isAuthenticated || !legalPaths.has(pathname));
+
+  if (usesPublicShell) {
     return (
       <SafeAreaView
         style={styles.publicSafeArea}

@@ -36,6 +36,7 @@ node -v
 - Lektionsablauf mit Einstiegstext, geschütztem PDF-Reader, geplanter Live-Zoom-Vorlesung und separatem Multiple-Choice-Quiz
 - responsive Desktop- und Mobilnavigation
 - öffentliche Werbe-Startseite sowie Registrierung und Anmeldung
+- öffentlich verlinkte Platzhalterseiten für Impressum und Datenschutz, die vor dem Release mit rechtlich geprüften Angaben vervollständigt werden müssen
 - geschützte Akademie-Routen mit Expo Router
 - Supabase-Sitzungsspeicherung im Browser sowie verschlüsselt über Expo SecureStore auf iOS und Android
 - Accountbereich mit Profil-, Passwort-, sicherer Lösch- und Abmeldefunktion
