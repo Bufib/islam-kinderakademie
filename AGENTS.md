@@ -19,11 +19,12 @@ Das Projekt ist eine funktionierende Supabase-gestützte Lernplattform. Als fach
 
 ## 2. Technischer Stack
 
-- Expo `~57.0.12`
-- Expo Router `~57.0.12`
+- Expo `~57.0.16`
+- Expo Router `~57.0.16`
 - React `19.2.3`
 - React Native `0.86.2`
 - React Native Web `~0.21.0`
+- Node.js `24` empfohlen; Expo 57 und Metro 0.84 benötigen mindestens eine unterstützte Version ab Node `22.13.x`. Node 23 ist nicht unterstützt.
 - TypeScript mit aktiviertem Strict Mode
 - Supabase für Auth, PostgreSQL und privaten Storage
 - `@supabase/supabase-js`
@@ -45,15 +46,54 @@ npm run android
 npm run lint
 npx tsc --noEmit
 npx expo export --platform web
+npx expo-doctor@latest
+npm audit --omit=dev
 ```
+
+### Abhängigkeitssicherheit und Release-Audit
+
+`npm audit` zählt einen einzelnen transitiven Befund für jedes davon abhängige Paket erneut. Die am 25. August 2026 ermittelte Ausgangslage von 20 Einträgen besteht deshalb nicht aus 20 unabhängigen Schwachstellen, sondern aus zwei Ursachen:
+
+- Acht hohe Folgeeinträge entstehen durch `image-size@1.2.1` unter Metro `0.84.4`. Die beiden Advisories `GHSA-w3rx-r6r6-pgpr` und `GHSA-5p2g-fcmc-qvqq` betreffen Endlosschleifen beim Parsen präparierter ICNS-, JXL- oder HEIF-Dateien. Der Pfad gehört zum Build-Tooling und nicht zum ausgelieferten App-Bundle.
+- Zwölf moderate Folgeeinträge entstehen durch `uuid@7.0.3` unter `@expo/config-plugins -> xcode@3.0.1`. `GHSA-w5hq-g745-h8pq` betrifft nur `uuid.v3()`, `v5()` und `v6()` mit übergebenem Buffer; das installierte `xcode` verwendet ausschließlich `uuid.v4()`.
+
+Vor dem Release zuerst eine unterstützte Node-Version aktivieren und den hohen Metro-Befund ohne React-Native-Abweichung beseitigen:
+
+```bash
+nvm install 24
+nvm use 24
+export PATH="$NVM_BIN:$PATH"
+hash -r
+command -v node
+command -v npm
+node -v
+npm install --save-dev --save-exact metro@0.84.5
+```
+
+`command -v node` und `command -v npm` müssen beide auf einen Pfad unter `~/.nvm/versions/node/v24.../bin/` zeigen; `node -v` muss eine Version `v24.x` melden. Eine bloße Erfolgsmeldung von `nvm use 24` reicht nicht als Nachweis. Zeigt die Shell weiterhin `/opt/homebrew/bin/node` oder `/opt/homebrew/bin/npm`, laufen npm und npx tatsächlich noch mit der nicht unterstützten Node-Version 23. Bis die PATH-Reihenfolge dauerhaft behoben ist, sind `"$NVM_BIN/npm"` und `"$NVM_BIN/npx"` ausdrücklich zu verwenden. `EBADENGINE`-Warnungen mit `current: node v23.3.0` dürfen in einer Release-Installation nicht akzeptiert werden.
+
+Das explizite Metro-Pinning muss die zusammengehörigen Metro-Pakete von `0.84.4` auf `0.84.5` auflösen und `image-size@1.2.1` aus dem Baum entfernen. Danach immer den tatsächlichen Installationsbaum und die Builds prüfen:
+
+```bash
+npm ls metro image-size
+npm audit --omit=dev
+npx expo-doctor@latest
+npx tsc --noEmit
+npm run lint
+npx expo export --platform web
+```
+
+Für Expo- und React-Native-Pakete niemals blind `npm audit fix --force` verwenden. Der Audit-Vorschlag kann Expo auf SDK 46 oder `expo-splash-screen` auf Version 55 zurückstufen. Expo-Abhängigkeiten werden mit `npx expo install --fix` an SDK 57 ausgerichtet. React Native bleibt auf der von Expo 57 validierten Version `0.86.2`, bis `npx expo install --check` einen neueren Patch akzeptiert. Metro-Pakete nicht einzeln per `overrides` mischen, da sie intern auf identische Patchstände gekoppelt sind.
+
+Für `uuid` gibt es im aktuellen `xcode@3.0.1`-Pfad keinen kompatiblen transitiven Fix. Ein Override auf UUID 11 oder neuer ist ein ungeprüfter Major-Sprung und deshalb nicht zulässig. Solange der Pfad unverändert bleibt, darf der Befund nach erfolgreichem Build dokumentiert akzeptiert werden. Die Freigabedokumentation muss mindestens Advisory, Abhängigkeitspfad, Build-only-Reichweite, nicht verwendete betroffene API, verantwortliche Person und ein Ablaufdatum enthalten. Aktuelle Neubewertung spätestens am 15. September 2026 oder sofort bei einem Expo-/xcode-Update. Fremde Pull Requests dürfen nicht mit Produktions-Secrets bauen und Build-Assets müssen aus vertrauenswürdigen Quellen stammen.
 
 GitHub Pages:
 
-- Repository: `Bufib/islam-kinderakademy`
-- Produktions-URL: `https://bufib.github.io/islam-kinderakademy/`
-- Expo-Unterpfad: `experiments.baseUrl = "/islam-kinderakademy"`
+- Repository: `Bufib/islam-kinderakademie`
+- Produktions-URL: `https://bufib.github.io/islam-kinderakademie/`
+- Expo-Unterpfad: `experiments.baseUrl = "/islam-kinderakademie"`
 - Workflow: `.github/workflows/deploy-pages.yml`
-- Deployment-Branch: `erweiterung` (ein Push auf diesen Branch veröffentlicht die aktuelle Web-App)
+- Deployment-Branch: `erweiterung4` (ein Push auf diesen Branch veröffentlicht die aktuelle Web-App)
 - Der Workflow erwartet die Repository-Secrets `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` und `EXPO_PUBLIC_HCAPTCHA_SITE_KEY`.
 
 Supabase:

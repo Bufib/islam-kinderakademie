@@ -2,6 +2,32 @@
 
 Web-first Lernplattform der Islam-Kinderakademie auf Basis von Expo 57, React Native, React Native Web und Supabase.
 
+## Voraussetzungen
+
+- Node.js 24 empfohlen; mindestens Node `22.13.x`
+- npm
+- ein Supabase-Projekt für Auth, Datenbank und privaten Storage
+
+Node 23 wird von Expo 57 beziehungsweise Metro 0.84 nicht unterstützt. Mit nvm kann die empfohlene Version so aktiviert werden:
+
+```bash
+nvm install 24
+nvm use 24
+export PATH="$NVM_BIN:$PATH"
+hash -r
+
+command -v node
+command -v npm
+node -v
+```
+
+`node` und `npm` müssen anschließend beide aus einem Pfad unter `~/.nvm/versions/node/v24.../bin/` kommen und `node -v` muss eine Version `v24.x` ausgeben. Zeigt einer der Pfade weiterhin auf `/opt/homebrew/bin/`, dürfen die Release-Prüfungen nicht mit diesem Homebrew-Binary ausgeführt werden. Bis die PATH-Reihenfolge dauerhaft korrigiert ist, können die nvm-Binaries ausdrücklich verwendet werden:
+
+```bash
+"$NVM_BIN/npm" install
+"$NVM_BIN/npx" expo-doctor@latest
+```
+
 ## Enthaltene Bereiche
 
 - Kinderansicht mit Übersicht, Lernreisen, Kalender und Islam-Pass
@@ -127,7 +153,7 @@ Eine Lektion wird im Lektionseditor unter **Status & Freigabe** zunächst auf **
 
 ## Auf GitHub Pages veröffentlichen
 
-Das Projekt ist für das Repository `Bufib/islam-kinderakademy` und damit für den Unterpfad `/islam-kinderakademy` konfiguriert. Der Workflow `.github/workflows/deploy-pages.yml` baut und veröffentlicht die Web-App automatisch bei jedem Push auf `erweiterung`. Während des Builds wird außerdem ein Pages-Fallback für direkt aufgerufene dynamische Lektions- und Mitteilungsrouten erzeugt.
+Das Projekt ist für das Repository `Bufib/islam-kinderakademie` und damit für den Unterpfad `/islam-kinderakademie` konfiguriert. Der Workflow `.github/workflows/deploy-pages.yml` baut und veröffentlicht die Web-App automatisch bei jedem Push auf `erweiterung4`. Während des Builds wird außerdem ein Pages-Fallback für direkt aufgerufene dynamische Lektions- und Mitteilungsrouten erzeugt.
 
 Im GitHub-Repository müssen unter **Settings → Secrets and variables → Actions** diese Repository-Secrets angelegt werden:
 
@@ -142,11 +168,11 @@ Nur den Publishable Key und den öffentlichen hCaptcha-Sitekey verwenden, niemal
 In Supabase unter **Authentication → URL Configuration → Redirect URLs** ergänzen:
 
 ```text
-https://bufib.github.io/islam-kinderakademy/login
-https://bufib.github.io/islam-kinderakademy/account
+https://bufib.github.io/islam-kinderakademie/login
+https://bufib.github.io/islam-kinderakademie/account
 ```
 
-Nach einem Push auf `erweiterung` ist die App unter `https://bufib.github.io/islam-kinderakademy/` erreichbar. Den Fortschritt zeigt GitHub im Tab **Actions** an.
+Nach einem Push auf `erweiterung4` ist die App unter `https://bufib.github.io/islam-kinderakademie/` erreichbar. Den Fortschritt zeigt GitHub im Tab **Actions** an.
 
 ## Prüfungen
 
@@ -154,4 +180,29 @@ Nach einem Push auf `erweiterung` ist die App unter `https://bufib.github.io/isl
 npm run lint
 npx tsc --noEmit
 npx expo export --platform web
+npx expo-doctor@latest
+npm audit --omit=dev
 ```
+
+## Abhängigkeitsaudit vor dem Release
+
+Die aktuell von `npm audit` gemeldeten 20 Einträge sind Kaskaden aus nur zwei transitiven Ursachen: acht hohe Einträge aus `image-size` über Metro und zwölf moderate Einträge aus `uuid` über Expos iOS-Build-Tool `xcode`.
+
+Die hohen Metro-Befunde werden beseitigt, ohne von der durch Expo 57 validierten React-Native-Version `0.86.2` abzuweichen:
+
+```bash
+npm install --save-dev --save-exact metro@0.84.5
+
+npm ls metro image-size
+npm audit --omit=dev
+npx expo-doctor@latest
+npm run lint
+npx tsc --noEmit
+npx expo export --platform web
+```
+
+Metro `0.84.5` entfernt die betroffene Abhängigkeit `image-size@1.2.1`. Nach der Installation dürfen deshalb keine hohen `image-size`-/Metro-Befunde mehr verbleiben.
+
+Der moderate Restbefund `GHSA-w5hq-g745-h8pq` folgt dem Pfad `@expo/config-plugins -> xcode@3.0.1 -> uuid@7.0.3`. Er betrifft `uuid.v3()`, `v5()` und `v6()` mit übergebenem Buffer; das verwendete `xcode` ruft nur `uuid.v4()` auf. Ein erzwungener Major-Override von UUID ist daher riskanter als eine befristete, dokumentierte Akzeptanz dieses nicht erreichbaren Build-Pfads. Die Bewertung ist spätestens am 15. September 2026 sowie bei jedem Expo-/xcode-Update zu erneuern.
+
+`npm audit fix --force` nicht verwenden: npm schlägt derzeit inkompatible Expo-Downgrades vor. Expo-Paketstände ausschließlich mit `npx expo install --fix` ausrichten und danach erneut mit Expo Doctor sowie den obigen Build-Prüfungen validieren.
