@@ -71,7 +71,21 @@ EXPO_PUBLIC_HCAPTCHA_BASE_URL=https://bufib.github.io
 
 In der App dürfen nur der Supabase-Publishable-Key und der öffentliche hCaptcha-Sitekey verwendet werden. Der `service_role`-Key und der hCaptcha-Secret-Key dürfen niemals im Client landen. Der hCaptcha-Secret-Key gehört ausschließlich in die CAPTCHA-Konfiguration des gehosteten Supabase-Projekts. Nur für einen separat gestarteten lokalen Supabase-Auth-Dienst wird `SUPABASE_AUTH_CAPTCHA_SECRET` benötigt; diese Variable gehört nicht in die App-`.env`.
 
-Für hCaptcha einen eigenen Sitekey anlegen und die Produktionsdomain freigeben. Anschließend in **Supabase → Authentication → Attack Protection → CAPTCHA Protection** hCaptcha auswählen, den hCaptcha-Secret-Key eintragen und den Schutz aktivieren. Supabase prüft CAPTCHA global auf Registrierung, Anmeldung und Passwort-Reset; die App sendet deshalb bei allen drei Abläufen sowie bei der erneuten Anmeldung vor einer Accountlöschung ein frisches Token.
+Für hCaptcha einen eigenen Sitekey anlegen und die Produktionsdomain freigeben. Anschließend in **Supabase → Authentication → Attack Protection → CAPTCHA Protection** hCaptcha auswählen, den hCaptcha-Secret-Key eintragen und den Schutz aktivieren. Registrierung, Passwort-Reset und die erneute Anmeldung vor einer Accountlöschung senden weiterhin ein frisches Token.
+
+Der normale Login benötigt kein Captcha und läuft über die Edge Function `password-login`. Vor Veröffentlichung des Clients bereitstellen:
+
+```bash
+npx supabase functions deploy password-login
+```
+
+`verify_jwt = false` ist dafür bereits in `supabase/config.toml` hinterlegt, da beim Login noch keine Sitzung existiert. Die Function prüft E-Mail und Passwort über den Supabase-Passwort-Grant und nutzt den automatisch bereitgestellten Server-Key ausschließlich für dessen CAPTCHA-Ausnahme. Sie gibt nur die User-Sitzung zurück. **Den globalen CAPTCHA-Schutz aktiviert lassen.** Es sind keine zusätzlichen Secrets erforderlich. Supabase-Auth-Ratenlimits gelten weiterhin; serverseitige Aufrufe teilen sich ohne IP-Weiterleitung das Limit der jeweiligen ausgehenden Server-IP. Details: [Supabase Auth-Ratenlimits](https://supabase.com/docs/guides/auth/rate-limits).
+
+Den Login-Handler ohne Netzwerk oder echte Konten prüfen:
+
+```bash
+deno test --node-modules-dir=none supabase/functions/password-login/handler_test.ts
+```
 
 Unter **Supabase → Authentication → Password security** zusätzlich mindestens 12 Zeichen sowie die stärkste Zeichenanforderung mit Klein-/Großbuchstaben, Zahlen und Sonderzeichen einstellen. Falls der Tarif es unterstützt, außerdem die Prüfung gegen bekannte geleakte Passwörter aktivieren. Die gleichen Regeln sind im Client und für die lokale Supabase-Instanz bereits hinterlegt.
 
@@ -103,7 +117,7 @@ Die Migration `20260815080000_manual_lesson_quiz_release.sql` ergänzt den Freig
 
 Die Migration `20260815100000_dynamic_age_groups.sql` überführt Altersgruppen in eine eigene Tabelle. Admins können sie unter **Curriculum & Altersgruppen** anlegen, bearbeiten und löschen, solange sie nicht von Kindern, Lernreisen oder Zeitgruppen verwendet werden.
 
-Die Migration `20260821090000_payment_payer_names.sql` sichert den Zahlungsbereich ab. Neue Registrierungen müssen PayPal oder Banküberweisung sowie den Namen des verwendeten Zahlungskontos angeben. Der Monatsbeitrag wird serverseitig auf 14,99 Euro festgelegt; IBAN, Kontonummern und PayPal-Zugangsdaten werden nicht erfasst. Nur Admins können diese Zahlungsdaten lesen.
+Die Migration `20260821090000_payment_payer_names.sql` sichert den Zahlungsbereich ab. Neue Registrierungen müssen PayPal oder Banküberweisung sowie den Namen des verwendeten Zahlungskontos angeben. Der Monatsbeitrag wird serverseitig auf 15,00 Euro festgelegt; IBAN, Kontonummern und PayPal-Zugangsdaten werden nicht erfasst. Nur Admins können diese Zahlungsdaten lesen.
 
 Die Migration `20260821110000_time_group_approval.sql` trennt Altersgruppen und Zeitgruppen fachlich. Beim Kinderprofil wird zuerst die Altersgruppe und anschließend eine passende Zeitgruppe des aktiven Akademiejahres ausgewählt. Altersgruppe und passende Lernreisen sind sofort sichtbar; die Zeitgruppe bleibt bis zur Admin-Freigabe angefragt. Erst danach werden Lektionen, Quizze, Termine, Links und gruppenspezifische Mitteilungen zugänglich.
 

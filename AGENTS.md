@@ -192,7 +192,9 @@ Unterstützte Abläufe:
 
 Auf iOS und Android speichert `src/lib/secure-session-storage.native.ts` die Supabase-Sitzung ausschließlich in kleinen, verschlüsselten Expo-SecureStore-Blöcken. Dadurch werden auch Sessions unterstützt, die für einen einzelnen SecureStore-Wert zu groß sind. Eine bestehende Klartext-Sitzung aus AsyncStorage wird beim ersten Lesen übernommen und anschließend dort gelöscht. Neue oder aktualisierte Session-Tokens dürfen nicht auf AsyncStorage zurückfallen. Der Browser verwendet weiterhin den von `supabase-js` vorgesehenen Web-Storage.
 
-Supabase-hCaptcha ist ein globaler Auth-Schutz. Registrierung, Anmeldung, Passwort-Reset und die erneute Passwortbestätigung vor der Accountlöschung müssen deshalb immer ein frisches `captchaToken` mitsenden. Ein Token wird nach jedem Auth-Aufruf zurückgesetzt und darf nicht wiederverwendet werden. Web verwendet `@hcaptcha/react-hcaptcha`, iOS und Android verwenden `@hcaptcha/react-native-hcaptcha` über die bereits installierte Expo-WebView.
+Supabase-hCaptcha bleibt als globaler Auth-Schutz aktiviert. Registrierung, Passwort-Reset und die erneute Passwortbestätigung vor der Accountlöschung senden weiterhin ein frisches `captchaToken`. Ein Token wird nach jedem Auth-Aufruf zurückgesetzt und darf nicht wiederverwendet werden. Web verwendet `@hcaptcha/react-hcaptcha`, iOS und Android verwenden `@hcaptcha/react-native-hcaptcha` über die bereits installierte Expo-WebView.
+
+Der normale Login ist ohne Captcha: `auth-context.tsx` ruft die öffentliche Edge Function `password-login` auf und übernimmt die zurückgegebenen User-Tokens mit `supabase.auth.setSession()`. Die Function erlaubt ausschließlich den Passwort-Grant und verwendet den automatisch bereitgestellten `SUPABASE_SERVICE_ROLE_KEY` nur serverseitig für die CAPTCHA-Ausnahme dieses Auth-Aufrufs. Passwortprüfung, E-Mail-Bestätigung, Kontosperren und Supabase-Auth-Ratenlimits bleiben wirksam. Keine Admin-API, freie Ziel-URL oder fremde Request-Header durchreichen; weder Passwörter noch Tokens loggen. Die Function vor Veröffentlichung des geänderten Clients mit `npx supabase functions deploy password-login` bereitstellen. Der globale CAPTCHA-Schutz darf dafür nicht deaktiviert werden.
 
 Neue und geänderte Passwörter benötigen mindestens 12 Zeichen sowie je einen Kleinbuchstaben, Großbuchstaben, eine Zahl und ein Sonderzeichen. Die Regel liegt zentral in `src/utils/password.ts` und muss im gehosteten Supabase-Projekt unter **Authentication → Password security** identisch konfiguriert bleiben. Clientprüfung allein gilt nicht als Sicherheitsgrenze.
 
@@ -204,7 +206,7 @@ Beim Registrieren schreibt die App `display_name`, `payment_method`, `payment_pa
 
 1. einen Datensatz in `profiles`,
 2. einen Datensatz in `user_roles` mit der Rolle `parent`,
-3. eine aktive `payment_agreements`-Zahlungsvereinbarung mit dem serverseitig festgelegten Monatsbeitrag von 14,99 Euro.
+3. eine aktive `payment_agreements`-Zahlungsvereinbarung mit dem serverseitig festgelegten Monatsbeitrag von 15,00 Euro.
 
 Der Name des Zahlungskontos ist bei neuen Registrierungen verpflichtend und bezeichnet bei PayPal den PayPal-Kontonamen beziehungsweise bei Banküberweisung den Namen des Kontoinhabers. Es werden keine IBAN, Kontonummern oder PayPal-Zugangsdaten erfasst. Nur Admins dürfen Zahlungsvereinbarungen und Monatszahlungen lesen. Vor Einführung des Feldes angelegte Bestandsvereinbarungen können noch keinen Zahlernamen enthalten.
 

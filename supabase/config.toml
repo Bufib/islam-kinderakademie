@@ -389,6 +389,11 @@ deno_version = 2
 [functions.delete-account]
 verify_jwt = false
 
+# Der Login ist öffentlich; E-Mail und Passwort werden im Handler über Supabase
+# Auth geprüft. Nur dieser Server-Aufruf verwendet die CAPTCHA-Ausnahme.
+[functions.password-login]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

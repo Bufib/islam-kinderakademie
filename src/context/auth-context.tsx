@@ -1,4 +1,4 @@
-import { Session, User } from '@supabase/supabase-js';
+import { FunctionsHttpError, Session, User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import {
   createContext,
@@ -39,6 +39,11 @@ type SignUpResult = AuthActionResult & {
   needsEmailConfirmation: boolean;
 };
 
+type PasswordLoginResponse = {
+  session?: { access_token: string; refresh_token: string };
+  error?: string;
+};
+
 type AuthContextValue = {
   session: Session | null;
   user: User | null;
@@ -51,7 +56,6 @@ type AuthContextValue = {
   signIn: (
     email: string,
     password: string,
-    captchaToken: string,
   ) => Promise<AuthActionResult>;
 
   signUp: (
@@ -403,7 +407,6 @@ export function AuthProvider({
     async (
       email: string,
       password: string,
-      captchaToken: string,
     ): Promise<AuthActionResult> => {
       if (!supabase) {
         return {
@@ -412,27 +415,31 @@ export function AuthProvider({
         };
       }
 
-      if (!captchaToken) {
-        return {
-          error: 'Bitte bestätige zuerst die hCaptcha-Prüfung.',
-        };
+      try {
+        const { data, error } =
+          await supabase.functions.invoke<PasswordLoginResponse>('password-login', {
+            body: { email, password },
+          });
+
+        if (error) {
+          if (error instanceof FunctionsHttpError) {
+            const response = await error.context.json() as PasswordLoginResponse;
+            if (typeof response.error === 'string') {
+              return { error: response.error };
+            }
+          }
+          return { error: 'Die Anmeldung ist zurzeit nicht verfügbar.' };
+        }
+        if (!data?.session?.access_token || !data.session.refresh_token) {
+          return { error: 'Die Anmeldung konnte nicht abgeschlossen werden.' };
+        }
+
+        // setSession übernimmt die normale Sitzungsspeicherung und Auth-Events.
+        const { error: sessionError } = await supabase.auth.setSession(data.session);
+        return { error: sessionError?.message ?? null };
+      } catch {
+        return { error: 'Die Anmeldung ist zurzeit nicht verfügbar.' };
       }
-
-      const { error } =
-        await supabase.auth.signInWithPassword(
-          {
-            email,
-            password,
-            options: {
-              captchaToken,
-            },
-          },
-        );
-
-      return {
-        error:
-          error?.message ?? null,
-      };
     },
     [],
   );
@@ -477,7 +484,7 @@ export function AuthProvider({
       if (!payment.paymentAccepted) {
         return {
           error:
-            'Bitte bestätige den monatlichen Beitrag von 14,99 €.',
+            'Bitte bestätige den monatlichen Beitrag von 15,00 €.',
           needsEmailConfirmation:
             false,
         };
@@ -534,7 +541,7 @@ export function AuthProvider({
              * payment_accepted anschließend
              * in payment_agreements.
              *
-             * Der Preis 14,99 € wird
+             * Der Preis 15,00 € wird
              * NICHT vom Client übertragen.
              * Er wird serverseitig auf
              * 1499 Cent festgelegt.

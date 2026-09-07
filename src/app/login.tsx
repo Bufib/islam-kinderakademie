@@ -1,23 +1,18 @@
 import { Href, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AuthCaptcha } from '@/components/auth/auth-captcha';
-import type { AuthCaptchaHandle } from '@/components/auth/auth-captcha.types';
 import { AuthField, AuthLayout, InlineNotice } from '@/components/auth/auth-layout';
 import { ActionButton, AppText } from '@/components/ui/primitives';
 import { Palette, Space } from '@/constants/design';
 import { useAuth } from '@/context/auth-context';
-import { hCaptchaSiteKey, isHCaptchaConfigured } from '@/lib/hcaptcha';
 import { translateAuthError } from '@/utils/auth-errors';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const captchaRef = useRef<AuthCaptchaHandle>(null);
   const { signIn, isAuthenticated, isConfigured } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,19 +29,8 @@ export default function LoginScreen() {
       return;
     }
 
-    if (!isHCaptchaConfigured) {
-      setError('hCaptcha ist noch nicht konfiguriert.');
-      return;
-    }
-
-    if (!captchaToken) {
-      setError('Bitte bestätige zuerst die hCaptcha-Prüfung.');
-      return;
-    }
-
     setSubmitting(true);
-    const result = await signIn(normalizedEmail, password, captchaToken);
-    captchaRef.current?.reset();
+    const result = await signIn(normalizedEmail, password);
     setSubmitting(false);
 
     if (result.error) {
@@ -82,12 +66,6 @@ export default function LoginScreen() {
             `.env`-Datei ein.
           </InlineNotice>
         )}
-        {!isHCaptchaConfigured && (
-          <InlineNotice tone="info">
-            hCaptcha ist noch nicht konfiguriert. Die Anmeldung wird erst nach
-            dem Hinterlegen des öffentlichen Sitekeys freigeschaltet.
-          </InlineNotice>
-        )}
         {error && <InlineNotice>{error}</InlineNotice>}
         <AuthField
           label="E-Mail-Adresse"
@@ -119,25 +97,10 @@ export default function LoginScreen() {
           style={({ pressed }) => [styles.resetLink, pressed && styles.pressed]}>
           <AppText variant="small" color={Palette.forest}>Passwort vergessen?</AppText>
         </Pressable>
-        {isHCaptchaConfigured && (
-          <AuthCaptcha
-            ref={captchaRef}
-            siteKey={hCaptchaSiteKey}
-            verified={Boolean(captchaToken)}
-            disabled={submitting}
-            onTokenChange={setCaptchaToken}
-            onError={setError}
-          />
-        )}
         <ActionButton
           label={submitting ? 'Wird angemeldet …' : 'Anmelden'}
           icon="arrow"
-          disabled={
-            submitting ||
-            !isConfigured ||
-            !isHCaptchaConfigured ||
-            !captchaToken
-          }
+          disabled={submitting || !isConfigured}
           onPress={() => void submit()}
           style={styles.submitButton}
         />

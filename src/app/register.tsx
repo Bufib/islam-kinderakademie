@@ -80,7 +80,7 @@ export default function RegisterScreen() {
 
     if (!paymentAccepted) {
       setError(
-        "Bitte bestätige, dass du mit dem monatlichen Beitrag von 14,99 € einverstanden bist.",
+        "Bitte bestätige, dass du mit dem monatlichen Beitrag von 15,00 € einverstanden bist.",
       );
       return;
     }
@@ -265,12 +265,12 @@ export default function RegisterScreen() {
             <AppText variant="bodyStrong">Monatsbeitrag</AppText>
 
             <AppText variant="heading" color={Palette.forest}>
-              14,99 €
+              15,00 €
             </AppText>
           </View>
 
           <AppText variant="small" color={Palette.inkSoft}>
-            Der Beitrag beträgt 14,99 € pro Monat.
+            Der Beitrag beträgt 15,00 € pro Monat.
           </AppText>
 
           {/* Zahlungsart */}
@@ -395,7 +395,7 @@ export default function RegisterScreen() {
             <View style={styles.checkboxText}>
               <AppText color={Palette.inkSoft}>
                 Ich bin mit einem monatlichen Beitrag von{" "}
-                <AppText variant="bodyStrong">14,99 €</AppText> einverstanden
+                <AppText variant="bodyStrong">15,00 €</AppText> einverstanden
                 und werde diesen monatlich über die gewählte Zahlungsart
                 entrichten.
               </AppText>
