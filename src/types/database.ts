@@ -445,4 +445,10 @@ export type QuizSubmissionResult = {
   total_questions: number;
   score_percent: number;
   passed: boolean;
+  answers: (Pick<
+    QuizAttemptAnswerRow,
+    'question_id' | 'selected_option_id' | 'is_correct'
+  > & {
+    correct_option_id: number;
+  })[];
 };

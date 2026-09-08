@@ -629,7 +629,20 @@ export async function submitMultipleChoiceQuiz(
     );
   }
 
-  return result as QuizSubmissionResult;
+  const submissionResult = result as Omit<QuizSubmissionResult, 'answers'>;
+  const { data: evaluatedAnswers, error: answersError } = await client().rpc(
+    'review_multiple_choice_quiz_attempt',
+    {
+      target_attempt_id: submissionResult.attempt_id,
+    }
+  );
+
+  fail(answersError);
+
+  return {
+    ...submissionResult,
+    answers: evaluatedAnswers ?? [],
+  } as QuizSubmissionResult;
 }
 
 /* ============================================================

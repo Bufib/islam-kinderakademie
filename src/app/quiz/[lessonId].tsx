@@ -175,7 +175,7 @@ export default function QuizScreen() {
         )}
       </Card>
 
-      {result ? (
+      {result && (
         <Card tone={result.passed ? 'mint' : 'sun'} style={styles.resultCard}>
           <View style={styles.resultIcon}>
             <AppIcon name={result.passed ? 'trophy' : 'refresh'} size={31} color={Palette.forest} />
@@ -203,63 +203,94 @@ export default function QuizScreen() {
             <ActionButton label="Zur Lektion" icon="arrow" onPress={() => router.back()} />
           </View>
         </Card>
-      ) : (
-        <>
-          <View style={styles.questionsList}>
-            {questions.map((question, questionIndex) => {
-              const options = data.quizOptions
-                .filter((option) => option.question_id === question.id)
-                .sort((a, b) => a.position - b.position);
-              return (
-                <Card key={question.id} style={styles.questionCard}>
-                  <View style={styles.questionHeader}>
-                    <View style={styles.questionNumber}><AppText variant="bodyStrong">{questionIndex + 1}</AppText></View>
-                    <AppText variant="heading" style={styles.questionText}>{question.question_text}</AppText>
-                  </View>
-                  <View style={styles.optionsList}>
-                    {options.map((option) => {
-                      const selected = answers[question.id] === option.id;
-                      return (
-                        <Pressable
-                          key={option.id}
-                          accessibilityRole="radio"
-                          accessibilityState={{ checked: selected }}
-                          onPress={() => setAnswers((current) => ({ ...current, [question.id]: option.id }))}
-                          style={({ pressed }) => [
-                            styles.option,
-                            selected && styles.optionSelected,
-                            pressed && styles.optionPressed,
-                          ]}>
-                          <View style={[styles.radio, selected && styles.radioSelected]}>
-                            {selected && <View style={styles.radioDot} />}
-                          </View>
-                          <AppText color={selected ? Palette.forest : Palette.inkSoft} style={styles.optionText}>
-                            {option.option_text}
-                          </AppText>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </Card>
-              );
-            })}
-          </View>
+      )}
 
-          <Card style={styles.submitCard}>
-            <View style={styles.submitCopy}>
-              <AppText variant="heading">Bereit zur Abgabe?</AppText>
-              <AppText color={Palette.inkSoft}>
-                {Object.keys(answers).length} von {questions.length} Fragen beantwortet
-              </AppText>
-            </View>
-            <ActionButton
-              label={submitting ? 'Wird ausgewertet …' : 'Quiz abgeben'}
-              icon="check"
-              disabled={submitting}
-              onPress={() => void submitQuiz()}
-            />
-          </Card>
-        </>
+      <View style={styles.questionsList}>
+        {questions.map((question, questionIndex) => {
+          const options = data.quizOptions
+            .filter((option) => option.question_id === question.id)
+            .sort((a, b) => a.position - b.position);
+          const evaluatedAnswer = result?.answers.find(
+            (answer) => answer.question_id === question.id
+          );
+          return (
+            <Card key={question.id} style={styles.questionCard}>
+              <View style={styles.questionHeader}>
+                <View style={styles.questionNumber}><AppText variant="bodyStrong">{questionIndex + 1}</AppText></View>
+                <AppText variant="heading" style={styles.questionText}>{question.question_text}</AppText>
+                {evaluatedAnswer && (
+                  <Pill
+                    tone={evaluatedAnswer.is_correct ? 'mint' : 'coral'}
+                    icon={evaluatedAnswer.is_correct ? 'check' : 'close'}>
+                    {evaluatedAnswer.is_correct ? 'Richtig' : 'Falsch'}
+                  </Pill>
+                )}
+              </View>
+              <View style={styles.optionsList}>
+                {options.map((option) => {
+                  const selectedOptionId = evaluatedAnswer?.selected_option_id ?? answers[question.id];
+                  const selected = selectedOptionId === option.id;
+                  const selectedCorrect = selected && evaluatedAnswer?.is_correct === true;
+                  const selectedIncorrect = selected && evaluatedAnswer?.is_correct === false;
+                  const revealedCorrect =
+                    evaluatedAnswer?.is_correct === false &&
+                    evaluatedAnswer.correct_option_id === option.id;
+                  return (
+                    <Pressable
+                      key={option.id}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: selected, disabled: Boolean(result) }}
+                      disabled={Boolean(result)}
+                      onPress={() => setAnswers((current) => ({ ...current, [question.id]: option.id }))}
+                      style={({ pressed }) => [
+                        styles.option,
+                        selected && !evaluatedAnswer && styles.optionSelected,
+                        selectedCorrect && styles.optionCorrect,
+                        revealedCorrect && styles.optionCorrect,
+                        selectedIncorrect && styles.optionIncorrect,
+                        pressed && !result && styles.optionPressed,
+                      ]}>
+                      <View
+                        style={[
+                          styles.radio,
+                          selected && styles.radioSelected,
+                          revealedCorrect && styles.radioSelected,
+                          selectedIncorrect && styles.radioIncorrect,
+                        ]}>
+                        {selected && <View style={[styles.radioDot, selectedIncorrect && styles.radioDotIncorrect]} />}
+                      </View>
+                      <AppText
+                        color={selectedIncorrect ? '#84412F' : selected || revealedCorrect ? Palette.forest : Palette.inkSoft}
+                        style={styles.optionText}>
+                        {option.option_text}
+                      </AppText>
+                      {revealedCorrect && (
+                        <Pill tone="mint" icon="check">Richtige Antwort</Pill>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </Card>
+          );
+        })}
+      </View>
+
+      {!result && (
+        <Card style={styles.submitCard}>
+          <View style={styles.submitCopy}>
+            <AppText variant="heading">Bereit zur Abgabe?</AppText>
+            <AppText color={Palette.inkSoft}>
+              {Object.keys(answers).length} von {questions.length} Fragen beantwortet
+            </AppText>
+          </View>
+          <ActionButton
+            label={submitting ? 'Wird ausgewertet …' : 'Quiz abgeben'}
+            icon="check"
+            disabled={submitting}
+            onPress={() => void submitQuiz()}
+          />
+        </Card>
       )}
     </PageScaffold>
   );
@@ -277,10 +308,14 @@ const styles = StyleSheet.create({
   optionsList: { gap: Space.sm },
   option: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: Space.md, borderWidth: 1, borderColor: Palette.line, borderRadius: Radius.medium, paddingHorizontal: Space.lg, paddingVertical: Space.md, backgroundColor: Palette.white },
   optionSelected: { borderColor: Palette.forest, backgroundColor: Palette.mint },
+  optionCorrect: { borderColor: Palette.forest, backgroundColor: Palette.mint },
+  optionIncorrect: { borderColor: Palette.coral, backgroundColor: Palette.coralSoft },
   optionPressed: { opacity: 0.8 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: Palette.disabled, alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: Palette.forest },
+  radioIncorrect: { borderColor: Palette.coral },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Palette.forest },
+  radioDotIncorrect: { backgroundColor: Palette.coral },
   optionText: { flex: 1 },
   submitCard: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Space.lg },
   submitCopy: { flex: 1, flexBasis: 220, minWidth: 0, gap: 3 },
