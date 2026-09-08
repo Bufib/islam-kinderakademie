@@ -196,7 +196,7 @@ export default function LandingScreen() {
 
       <View style={[styles.footer, small && styles.footerSmall]}>
         <AppText variant="small" color={Palette.muted}>
-          © {new Date().getFullYear()} Islam-Kinderakademie
+          © {new Date().getFullYear()} BufiB-Kinderakademie
         </AppText>
         <View style={styles.footerLinks}>
           <Pressable

@@ -32,10 +32,7 @@ const fields: LegalPlaceholderField[] = [
     label: "Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV",
     placeholder: "Bund für islamische Bildung e.V.",
   },
-  {
-    label: "Quellenangaben für die verwendeten Bilder und Grafiken",
-    placeholder: "www.deviantart.com, www.wikipedia.de",
-  },
+
   {
     label: "Quelle",
     placeholder: "http://www.e-recht24.de",
