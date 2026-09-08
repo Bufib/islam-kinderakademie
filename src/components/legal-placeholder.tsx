@@ -1,5 +1,6 @@
 import { Href, useRouter } from "expo-router";
 import {
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,18 +21,21 @@ import { useAuth } from "@/context/auth-context";
 export type LegalPlaceholderField = {
   label: string;
   placeholder: string;
+  href?: string;
 };
 
 type LegalPlaceholderProps = {
   title: string;
   description: string;
   fields: LegalPlaceholderField[];
+  isPlaceholder?: boolean;
 };
 
 export function LegalPlaceholder({
   title,
   description,
   fields,
+  isPlaceholder = true,
 }: LegalPlaceholderProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -40,15 +44,19 @@ export function LegalPlaceholder({
 
   const open = (href: string) => router.push(href as Href);
 
-  const placeholderContent = (
+  const legalContent = (
     <>
-      <Card tone="sun" style={styles.notice}>
-        <AppText variant="bodyStrong">Noch nicht veröffentlichungsfertig</AppText>
-        <AppText color={Palette.inkSoft}>
-          Die folgenden Platzhalter müssen vor der Veröffentlichung durch
-          vollständige, rechtlich geprüfte Angaben ersetzt werden.
-        </AppText>
-      </Card>
+      {isPlaceholder && (
+        <Card tone="sun" style={styles.notice}>
+          <AppText variant="bodyStrong">
+            Noch nicht veröffentlichungsfertig
+          </AppText>
+          <AppText color={Palette.inkSoft}>
+            Die folgenden Platzhalter müssen vor der Veröffentlichung durch
+            vollständige, rechtlich geprüfte Angaben ersetzt werden.
+          </AppText>
+        </Card>
+      )}
 
       <Card style={styles.fieldsCard}>
         {fields.map((field, index) => (
@@ -62,7 +70,19 @@ export function LegalPlaceholder({
             <AppText variant="label" color={Palette.forest}>
               {field.label}
             </AppText>
-            <AppText color={Palette.inkSoft}>{field.placeholder}</AppText>
+            {field.href ? (
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => void Linking.openURL(field.href!)}
+                style={({ pressed }) => pressed && styles.pressed}
+              >
+                <AppText color={Palette.forest} style={styles.linkText}>
+                  {field.placeholder}
+                </AppText>
+              </Pressable>
+            ) : (
+              <AppText color={Palette.inkSoft}>{field.placeholder}</AppText>
+            )}
           </View>
         ))}
       </Card>
@@ -76,7 +96,7 @@ export function LegalPlaceholder({
         title={title}
         description={description}
       >
-        <View style={styles.authenticatedContent}>{placeholderContent}</View>
+        <View style={styles.authenticatedContent}>{legalContent}</View>
       </PageScaffold>
     );
   }
@@ -107,14 +127,16 @@ export function LegalPlaceholder({
 
       <View style={[styles.content, compact && styles.contentCompact]}>
         <View style={styles.heading}>
-          <Pill tone="sun">PLATZHALTER</Pill>
+          <Pill tone={isPlaceholder ? "sun" : "mint"}>
+            {isPlaceholder ? "PLATZHALTER" : "RECHTLICHES"}
+          </Pill>
           <AppText variant={compact ? "title" : "display"}>{title}</AppText>
           <AppText color={Palette.inkSoft} style={styles.description}>
             {description}
           </AppText>
         </View>
 
-        {placeholderContent}
+        {legalContent}
       </View>
 
       <View style={[styles.footer, compact && styles.footerCompact]}>

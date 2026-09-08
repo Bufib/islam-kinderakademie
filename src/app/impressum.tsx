@@ -5,25 +5,41 @@ import {
 
 const fields: LegalPlaceholderField[] = [
   {
-    label: "Anbieter",
-    placeholder: "[Vollständigen Namen oder Organisation ergänzen]",
+    label: "Angaben gemäß § 5 TMG",
+    placeholder:
+      "Bund für islamische Bildung e. V.\n\nFüssener Str. 15\n12309 Berlin",
   },
   {
-    label: "Anschrift",
-    placeholder: "[Straße, Hausnummer, Postleitzahl und Ort ergänzen]",
+    label: "Vertreten durch",
+    placeholder:
+      "Samer Khalil (1. Vorsitzender)\nAnne-Maria Nowak (2. Vorsitzende)\nMohammad Klait (Schriftführer)",
   },
   {
     label: "Kontakt",
-    placeholder: "[E-Mail-Adresse und gegebenenfalls Telefonnummer ergänzen]",
+    placeholder: "E-Mail: info@bufib.de",
+    href: "mailto:info@bufib.de",
   },
   {
-    label: "Vertretungsberechtigte Person",
-    placeholder: "[Name und Funktion ergänzen, falls zutreffend]",
-  },
-  {
-    label: "Weitere Pflichtangaben",
+    label: "Registereintrag",
     placeholder:
-      "[Rechtsform, Registerangaben, Umsatzsteuer-ID und inhaltlich verantwortliche Person prüfen und ergänzen, soweit erforderlich]",
+      "Eintragung im Vereinsregister.\nRegistergericht: Amtsgericht Berlin-Charlottenburg\nRegisternummer: VR 32921",
+  },
+  {
+    label: "Steuernummer",
+    placeholder: "27/657/53847",
+  },
+  {
+    label: "Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV",
+    placeholder: "Bund für islamische Bildung e.V.",
+  },
+  {
+    label: "Quellenangaben für die verwendeten Bilder und Grafiken",
+    placeholder: "www.deviantart.com, www.wikipedia.de",
+  },
+  {
+    label: "Quelle",
+    placeholder: "http://www.e-recht24.de",
+    href: "http://www.e-recht24.de",
   },
 ];
 
@@ -31,8 +47,9 @@ export default function ImpressumScreen() {
   return (
     <LegalPlaceholder
       title="Impressum"
-      description="Hier werden künftig die gesetzlich erforderlichen Anbieter- und Kontaktangaben der Islam-Kinderakademie veröffentlicht."
+      description="Anbieterkennzeichnung des Bund für islamische Bildung e. V."
       fields={fields}
+      isPlaceholder={false}
     />
   );
 }
