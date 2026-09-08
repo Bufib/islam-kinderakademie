@@ -64,24 +64,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes lftp
 
+      - name: OVHcloud-Server verifizieren
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d -m 700 "${HOME}/.ssh"
+          printf '%s\n' \
+            'ftp.cluster121.hosting.ovh.net ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSgweEQn216+sUrv4A0HwrnvJi03tu/LPeJ176yB29a' \
+            > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/known_hosts"
+
+          fingerprint="$(ssh-keygen -lf "${HOME}/.ssh/known_hosts" | awk '{print $2}')"
+          test "${fingerprint}" = 'SHA256:6053kGsbCzj0rOIpNAz9SNbToAfBc/rUoX/LlnG1AhY'
+
       - name: Build zu OVHcloud uebertragen
         shell: bash
         env:
-          OVH_SFTP_HOST: ${{ secrets.OVH_SFTP_HOST }}
-          OVH_SFTP_USERNAME: ${{ secrets.OVH_SFTP_USERNAME }}
           OVH_SFTP_PASSWORD: ${{ secrets.OVH_SFTP_PASSWORD }}
-          OVH_SFTP_PORT: ${{ secrets.OVH_SFTP_PORT }}
         run: |
           set -euo pipefail
-          : "${OVH_SFTP_HOST:?OVH_SFTP_HOST fehlt}"
-          : "${OVH_SFTP_USERNAME:?OVH_SFTP_USERNAME fehlt}"
           : "${OVH_SFTP_PASSWORD:?OVH_SFTP_PASSWORD fehlt}"
-          : "${OVH_SFTP_PORT:?OVH_SFTP_PORT fehlt}"
+
+          OVH_SFTP_HOST='ftp.cluster121.hosting.ovh.net'
+          OVH_SFTP_USERNAME='bufibko'
+          OVH_SFTP_PORT='22'
 
           lftp \
             -u "${OVH_SFTP_USERNAME},${OVH_SFTP_PASSWORD}" \
             "sftp://${OVH_SFTP_HOST}:${OVH_SFTP_PORT}" \
-            -e "set cmd:fail-exit true; set net:max-retries 2; set net:timeout 20; set sftp:auto-confirm yes; mirror --reverse --delete --verbose --parallel=4 --exclude-glob .well-known/** --exclude-glob .ovhconfig dist/ www/; bye"
+            -e "set cmd:fail-exit true; set net:max-retries 1; set net:timeout 30; set sftp:auto-confirm no; cls -la www/; mirror --reverse --delete --verbose --exclude-glob .well-known/** --exclude-glob .ovhconfig dist/ www/; bye"
 
       - name: Veroeffentlichung pruefen
         shell: bash
