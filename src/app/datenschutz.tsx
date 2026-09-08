@@ -20,7 +20,7 @@ const fields: LegalPlaceholderField[] = [
   {
     label: "Empfänger und eingesetzte Dienste",
     placeholder:
-      "[Unter anderem Supabase, hCaptcha, GitHub Pages und Zoom rechtlich prüfen und vollständig aufführen]",
+      "[Unter anderem Supabase, hCaptcha, OVHcloud und Zoom rechtlich prüfen und vollständig aufführen]",
   },
   {
     label: "Speicherdauer und Löschung",

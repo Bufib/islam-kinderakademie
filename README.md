@@ -66,7 +66,7 @@ cp .env.example .env
 EXPO_PUBLIC_SUPABASE_URL=https://DEIN-PROJEKT.supabase.co
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=DEIN_PUBLISHABLE_KEY
 EXPO_PUBLIC_HCAPTCHA_SITE_KEY=DEIN_HCAPTCHA_SITEKEY
-EXPO_PUBLIC_HCAPTCHA_BASE_URL=https://bufib.github.io
+EXPO_PUBLIC_HCAPTCHA_BASE_URL=https://www.bufib-kinder.de
 ```
 
 In der App dürfen nur der Supabase-Publishable-Key und der öffentliche hCaptcha-Sitekey verwendet werden. Der `service_role`-Key und der hCaptcha-Secret-Key dürfen niemals im Client landen. Der hCaptcha-Secret-Key gehört ausschließlich in die CAPTCHA-Konfiguration des gehosteten Supabase-Projekts. Nur für einen separat gestarteten lokalen Supabase-Auth-Dienst wird `SUPABASE_AUTH_CAPTCHA_SECRET` benötigt; diese Variable gehört nicht in die App-`.env`.
@@ -166,9 +166,9 @@ Die öffentliche Seite liegt unter `/`. Nach der Anmeldung führt `/dashboard` a
 
 Eine Lektion wird im Lektionseditor unter **Status & Freigabe** zunächst auf **Veröffentlicht** gesetzt und gespeichert. Danach kann ein Admin sie dort mit **Lektion jetzt freigeben** für Familien sichtbar machen. PDFs werden nach dem ersten Speichern im Abschnitt **PDF-Lesematerial** hochgeladen. Live-Termine verwenden ein separates Kalenderfeld sowie Felder für Beginn und Ende.
 
-## Auf GitHub Pages veröffentlichen
+## Auf OVHcloud veröffentlichen
 
-Das Projekt ist für das Repository `Bufib/islam-kinderakademie` und damit für den Unterpfad `/islam-kinderakademie` konfiguriert. Der Workflow `.github/workflows/deploy-pages.yml` baut und veröffentlicht die Web-App automatisch bei jedem Push auf `erweiterung4`. Während des Builds wird außerdem ein Pages-Fallback für direkt aufgerufene dynamische Lektions- und Mitteilungsrouten erzeugt.
+Der Workflow `.github/workflows/deploy-ovh.yml` prüft, baut und veröffentlicht die Web-App automatisch bei jedem Push auf `erweiterung5`. Nur der erzeugte Inhalt von `dist/` wird per SFTP in den OVH-Stammordner `www/` übertragen. `public/.htaccess` erzwingt HTTPS und den kanonischen Host `www.bufib-kinder.de` und löst die statischen sowie dynamischen Expo-Routen auf.
 
 Im GitHub-Repository müssen unter **Settings → Secrets and variables → Actions** diese Repository-Secrets angelegt werden:
 
@@ -176,18 +176,22 @@ Im GitHub-Repository müssen unter **Settings → Secrets and variables → Acti
 EXPO_PUBLIC_SUPABASE_URL
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 EXPO_PUBLIC_HCAPTCHA_SITE_KEY
+OVH_SFTP_HOST
+OVH_SFTP_USERNAME
+OVH_SFTP_PASSWORD
+OVH_SFTP_PORT
 ```
 
-Nur den Publishable Key und den öffentlichen hCaptcha-Sitekey verwenden, niemals den `service_role`- oder hCaptcha-Secret-Key. Unter **Settings → Pages → Build and deployment** anschließend als Quelle **GitHub Actions** auswählen.
+Nur den Publishable Key und den öffentlichen hCaptcha-Sitekey verwenden, niemals den `service_role`- oder hCaptcha-Secret-Key. Die OVH-Zugangsdaten gehören ausschließlich in GitHub Actions Secrets und niemals in Git oder eine lokale Dokumentationsdatei.
 
 In Supabase unter **Authentication → URL Configuration → Redirect URLs** ergänzen:
 
 ```text
-https://bufib.github.io/islam-kinderakademie/login
-https://bufib.github.io/islam-kinderakademie/account
+https://www.bufib-kinder.de/login
+https://www.bufib-kinder.de/account
 ```
 
-Nach einem Push auf `erweiterung4` ist die App unter `https://bufib.github.io/islam-kinderakademie/` erreichbar. Den Fortschritt zeigt GitHub im Tab **Actions** an.
+Die Supabase **Site URL** lautet `https://www.bufib-kinder.de`. Nach einem erfolgreichen Push auf `erweiterung5` ist die App unter `https://www.bufib-kinder.de/` erreichbar. Den Fortschritt zeigt GitHub im Tab **Actions** an.
 
 ## Prüfungen
 

@@ -13,7 +13,7 @@ function request(
   return new Request("http://localhost/password-login", {
     method: "POST",
     headers: {
-      origin: "https://bufib.github.io",
+      origin: "https://www.bufib-kinder.de",
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
@@ -56,7 +56,7 @@ Deno.test("logs in without captcha, forwards only credentials and returns only u
   equal(response.headers.get("Cache-Control"), "no-store");
   equal(
     response.headers.get("Access-Control-Allow-Origin"),
-    "https://bufib.github.io",
+    "https://www.bufib-kinder.de",
   );
   ok(called);
 });
@@ -130,7 +130,7 @@ Deno.test("handles browser preflight, blocks unapproved origins and permits nati
   const options = await handler(
     new Request("http://localhost", {
       method: "OPTIONS",
-      headers: { origin: "https://bufib.github.io" },
+      headers: { origin: "https://www.bufib-kinder.de" },
     }),
   );
   equal(options.status, 204);

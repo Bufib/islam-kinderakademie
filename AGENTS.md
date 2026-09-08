@@ -87,14 +87,15 @@ Für Expo- und React-Native-Pakete niemals blind `npm audit fix --force` verwend
 
 Für `uuid` gibt es im aktuellen `xcode@3.0.1`-Pfad keinen kompatiblen transitiven Fix. Ein Override auf UUID 11 oder neuer ist ein ungeprüfter Major-Sprung und deshalb nicht zulässig. Solange der Pfad unverändert bleibt, darf der Befund nach erfolgreichem Build dokumentiert akzeptiert werden. Die Freigabedokumentation muss mindestens Advisory, Abhängigkeitspfad, Build-only-Reichweite, nicht verwendete betroffene API, verantwortliche Person und ein Ablaufdatum enthalten. Aktuelle Neubewertung spätestens am 15. September 2026 oder sofort bei einem Expo-/xcode-Update. Fremde Pull Requests dürfen nicht mit Produktions-Secrets bauen und Build-Assets müssen aus vertrauenswürdigen Quellen stammen.
 
-GitHub Pages:
+OVHcloud-Produktion:
 
 - Repository: `Bufib/islam-kinderakademie`
-- Produktions-URL: `https://bufib.github.io/islam-kinderakademie/`
-- Expo-Unterpfad: `experiments.baseUrl = "/islam-kinderakademie"`
-- Workflow: `.github/workflows/deploy-pages.yml`
-- Deployment-Branch: `erweiterung4` (ein Push auf diesen Branch veröffentlicht die aktuelle Web-App)
-- Der Workflow erwartet die Repository-Secrets `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` und `EXPO_PUBLIC_HCAPTCHA_SITE_KEY`.
+- Produktions-URL: `https://www.bufib-kinder.de/`
+- Kanonischer Host: `www.bufib-kinder.de`; die Apex-Domain wird per `.htaccess` umgeleitet.
+- OVH-Stammordner: `www/`
+- Workflow: `.github/workflows/deploy-ovh.yml`
+- Deployment-Branch: `erweiterung5` (ein Push auf diesen Branch prüft, baut und veröffentlicht die aktuelle Web-App per SFTP).
+- Der Workflow erwartet die Repository-Secrets `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_HCAPTCHA_SITE_KEY`, `OVH_SFTP_HOST`, `OVH_SFTP_USERNAME`, `OVH_SFTP_PASSWORD` und `OVH_SFTP_PORT`.
 
 Supabase:
 
@@ -115,7 +116,7 @@ Die App erwartet eine lokale `.env` mit:
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 EXPO_PUBLIC_HCAPTCHA_SITE_KEY=
-EXPO_PUBLIC_HCAPTCHA_BASE_URL=https://bufib.github.io
+EXPO_PUBLIC_HCAPTCHA_BASE_URL=https://www.bufib-kinder.de
 ```
 
 Vorlage: `.env.example`.

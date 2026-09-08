@@ -1,0 +1,33 @@
+DirectoryIndex index.html
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Use one HTTPS origin for Supabase redirects, hCaptcha and canonical links.
+  RewriteCond %{HTTPS} !=on [OR]
+  RewriteCond %{HTTP_HOST} !^www\.bufib-kinder\.de$ [NC]
+  RewriteRule ^ https://www.bufib-kinder.de%{REQUEST_URI} [R=301,L]
+
+  # Serve generated files and asset directories unchanged.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Map runtime parameters to Expo Router's generated dynamic route shells.
+  RewriteRule ^lektion/[^/]+/?$ lektion/\[id\].html [L]
+  RewriteRule ^mitteilung/[^/]+/?$ mitteilung/\[id\].html [L]
+  RewriteRule ^quiz/[^/]+/?$ quiz/\[lessonId\].html [L]
+
+  # Expo's static output uses .html files while the app exposes clean URLs.
+  RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+  RewriteRule ^(.+?)/?$ $1.html [L]
+
+  RewriteRule ^ +not-found.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>

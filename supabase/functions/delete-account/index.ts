@@ -1,7 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.112.3";
 
 const ALLOWED_ORIGINS = new Set([
-  "https://bufib.github.io",
+  "https://www.bufib-kinder.de",
+  "https://bufib-kinder.de",
   "http://localhost:8081",
   "http://127.0.0.1:8081",
 ]);

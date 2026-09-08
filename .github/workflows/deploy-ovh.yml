@@ -1,0 +1,91 @@
+name: Web-App auf OVHcloud veroeffentlichen
+
+on:
+  push:
+    branches:
+      - erweiterung5
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ovh-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Pruefen, bauen und per SFTP veroeffentlichen
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://www.bufib-kinder.de
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v6
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Abhaengigkeiten installieren
+        run: npm ci
+
+      - name: TypeScript pruefen
+        run: npx tsc --noEmit
+
+      - name: Lint pruefen
+        run: npm run lint
+
+      - name: Web-App exportieren
+        run: npm run export:web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          EXPO_PUBLIC_HCAPTCHA_SITE_KEY: ${{ secrets.EXPO_PUBLIC_HCAPTCHA_SITE_KEY }}
+          EXPO_PUBLIC_HCAPTCHA_BASE_URL: https://www.bufib-kinder.de
+
+      - name: Produktionsbuild kontrollieren
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -f dist/.htaccess
+          if grep -R "/islam-kinderakademie/" dist --include="*.html" --include="*.js"; then
+            echo "Der alte GitHub-Pages-Unterpfad ist noch im Build enthalten."
+            exit 1
+          fi
+
+      - name: SFTP-Client installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes lftp
+
+      - name: Build zu OVHcloud uebertragen
+        shell: bash
+        env:
+          OVH_SFTP_HOST: ${{ secrets.OVH_SFTP_HOST }}
+          OVH_SFTP_USERNAME: ${{ secrets.OVH_SFTP_USERNAME }}
+          OVH_SFTP_PASSWORD: ${{ secrets.OVH_SFTP_PASSWORD }}
+          OVH_SFTP_PORT: ${{ secrets.OVH_SFTP_PORT }}
+        run: |
+          set -euo pipefail
+          : "${OVH_SFTP_HOST:?OVH_SFTP_HOST fehlt}"
+          : "${OVH_SFTP_USERNAME:?OVH_SFTP_USERNAME fehlt}"
+          : "${OVH_SFTP_PASSWORD:?OVH_SFTP_PASSWORD fehlt}"
+          : "${OVH_SFTP_PORT:?OVH_SFTP_PORT fehlt}"
+
+          lftp \
+            -u "${OVH_SFTP_USERNAME},${OVH_SFTP_PASSWORD}" \
+            "sftp://${OVH_SFTP_HOST}:${OVH_SFTP_PORT}" \
+            -e "set cmd:fail-exit true; set net:max-retries 2; set net:timeout 20; set sftp:auto-confirm yes; mirror --reverse --delete --verbose --parallel=4 --exclude-glob .well-known/** --exclude-glob .ovhconfig dist/ www/; bye"
+
+      - name: Veroeffentlichung pruefen
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 https://www.bufib-kinder.de/ > /dev/null
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 https://www.bufib-kinder.de/login > /dev/null
