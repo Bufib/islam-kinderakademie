@@ -98,7 +98,12 @@ export default function LandingScreen() {
           </View>
         </View>
 
-        <View style={[styles.previewWrap, compact && styles.previewWrapCompact]}>
+        <View
+          style={[
+            styles.previewWrap,
+            compact && styles.previewWrapCompact,
+            small && styles.previewWrapSmall,
+          ]}>
           <View style={styles.previewGlow} />
           <View style={[styles.previewCard, small && styles.previewCardSmall]}>
             <View style={styles.previewTop}>
@@ -330,7 +335,8 @@ const styles = StyleSheet.create({
   },
   publicButtonLarge: { minHeight: 54, paddingHorizontal: 24 },
   previewWrap: { flex: 0.9, minWidth: 390, maxWidth: 500, width: '100%', position: 'relative' },
-  previewWrapCompact: { minWidth: 0 },
+  previewWrapCompact: { minWidth: 0, marginTop: Space.xl },
+  previewWrapSmall: { marginTop: Space.huge + Space.lg },
   previewGlow: {
     position: 'absolute',
     left: -32,

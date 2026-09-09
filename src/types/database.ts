@@ -274,6 +274,14 @@ export type MessageRow = {
   created_at: string;
 };
 
+export type MessageReadRow = {
+  id: number;
+  message_id: number;
+  profile_id: number;
+  read_at: string;
+  created_at: string;
+};
+
 export type PaymentAgreementRow = {
   id: number;
   auth_user_id: string | null;
@@ -334,6 +342,7 @@ export type AcademyData = {
   mediaAssets: MediaAssetRow[];
   lessonDocuments: LessonDocumentRow[];
   messages: MessageRow[];
+  messageReads: MessageReadRow[];
 };
 
 export const emptyDatabaseData: AcademyData = {
@@ -362,6 +371,7 @@ export const emptyDatabaseData: AcademyData = {
   mediaAssets: [],
   lessonDocuments: [],
   messages: [],
+  messageReads: [],
 };
 
 export type AcademyTableRowMap = {
@@ -390,6 +400,7 @@ export type AcademyTableRowMap = {
   media_assets: MediaAssetRow;
   lesson_documents: LessonDocumentRow;
   messages: MessageRow;
+  message_reads: MessageReadRow;
   payment_agreements: PaymentAgreementRow;
   monthly_payments: MonthlyPaymentRow;
 };

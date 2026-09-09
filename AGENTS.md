@@ -413,6 +413,10 @@ Metadaten für Bilder, Audio, Video oder Dokumente. Die eigentlichen Dateien lie
 
 Mitteilungen an alle, an ein bestimmtes Profil oder an eine Zeitgruppe. Beim erstmaligen Wechsel einer Zeitgruppenzuordnung auf `approved` erzeugt die Datenbank automatisch eine veröffentlichte persönliche Mitteilung für das Elternprofil des Kindes.
 
+#### `message_reads`
+
+Personenbezogene Lesebestätigungen für Mitteilungen. Pro Profil und Mitteilung existiert höchstens ein Datensatz. Familien sehen ausschließlich ihre eigenen Lesebestätigungen; eine Bestätigung darf nur für eine Mitteilung angelegt werden, die das Profil durch die Mitteilungs-RLS tatsächlich lesen kann.
+
 ### Beziehungen
 
 ```text
@@ -511,6 +515,8 @@ Aktueller relevanter Stand:
 
 Alle genannten Migrationen sind auf dem aktuell verknüpften Supabase-Projekt ausgeführt. Remote-Schema-Lint war danach fehlerfrei.
 
+Noch lokal anzuwenden: `20260909120000_message_read_receipts.sql` ergänzt den personenbezogenen Lesestatus für zugängliche Mitteilungen mit eigener RLS.
+
 Weitere Seeds oder fachliche Beispieldaten nur auf ausdrücklichen Auftrag anlegen.
 
 ## 11. Aktueller Funktionsstand
@@ -547,6 +553,7 @@ Bereits funktional umgesetzt:
 - Mitteilungen an alle, einzelne Profile oder Zeitgruppen
 - automatische persönliche Mitteilung an das Elternkonto, sobald ein Kind für eine Zeitgruppe freigeschaltet wurde
 - kompakte Mitteilungsübersicht mit Titel/erstem Satz und separater Detailansicht
+- blauer Ungelesen-Hinweis in Desktop-, Mobil- und Kopfnavigation sowie hervorgehobene ungelesene Mitteilungen; der Status wird beim Öffnen profilbezogen gespeichert
 - Abzeichenverwaltung und persönliche Verleihung
 - Abgabenübersicht für das Akademieteam
 - private Medien-Uploads, signierte Download-Links und Löschung in Supabase Storage

@@ -16,6 +16,7 @@ export type AppIconName =
   | "media"
   | "add"
   | "arrow"
+  | "arrowBack"
   | "chevron"
   | "more"
   | "play"
@@ -91,6 +92,7 @@ const iconNames: Record<AppIconName, PlatformIcon> = {
   },
   add: { ios: "plus", android: "add", web: "add" },
   arrow: { ios: "arrow.right", android: "arrow_forward", web: "arrow_forward" },
+  arrowBack: { ios: "arrow.left", android: "arrow_back", web: "arrow_back" },
   chevron: {
     ios: "chevron.right",
     android: "chevron_right",

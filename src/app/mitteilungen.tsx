@@ -28,6 +28,10 @@ import { createRecord, deleteRecord, updateRecord } from "@/lib/academy-api";
 import { MessageAudience, MessageRow } from "@/types/database";
 import { confirmAction } from "@/utils/feedback";
 import { apiErrorMessage } from "@/utils/format";
+import {
+  accessibleFamilyMessages,
+  unreadFamilyMessageIds,
+} from "@/utils/messages";
 
 type MessageFilter = "any" | MessageAudience;
 type MessageForm = {
@@ -68,40 +72,15 @@ export default function MessagesScreen() {
 
   const accessibleMessages = useMemo(() => {
     if (isTeam) return data.messages;
-
-    const ownChildIds = new Set(
-      data.children
-        .filter((child) => child.parent_profile_id === profile?.id)
-        .map((child) => child.id),
-    );
-    const ownApprovedGroupIds = new Set(
-      data.groupMembers
-        .filter(
-          (membership) =>
-            ownChildIds.has(membership.child_id) &&
-            membership.membership_status === "approved",
-        )
-        .map((membership) => membership.group_id),
-    );
-    return data.messages.filter(
-      (message) =>
-        Boolean(message.published_at) &&
-        new Date(message.published_at!).getTime() <= openedAt &&
-        (message.audience === "all" ||
-          (message.audience === "profile" &&
-            message.recipient_profile_id === profile?.id) ||
-          (message.audience === "group" &&
-            Boolean(message.group_id) &&
-            ownApprovedGroupIds.has(message.group_id!))),
-    );
-  }, [
-    data.children,
-    data.groupMembers,
-    data.messages,
-    isTeam,
-    openedAt,
-    profile?.id,
-  ]);
+    return accessibleFamilyMessages(data, profile?.id, openedAt);
+  }, [data, isTeam, openedAt, profile?.id]);
+  const unreadMessageIds = useMemo(
+    () =>
+      isTeam
+        ? new Set<number>()
+        : unreadFamilyMessageIds(data, profile?.id, openedAt),
+    [data, isTeam, openedAt, profile?.id],
+  );
   const visibleMessages = useMemo(
     () =>
       accessibleMessages.filter(
@@ -109,6 +88,9 @@ export default function MessagesScreen() {
       ),
     [accessibleMessages, filter],
   );
+  const visibleUnreadCount = visibleMessages.filter((message) =>
+    unreadMessageIds.has(message.id),
+  ).length;
 
   function openMessage(message?: MessageRow) {
     setEditing(message ?? null);
@@ -230,6 +212,9 @@ export default function MessagesScreen() {
           </View>
           <AppText variant="small" color={Palette.muted}>
             {visibleMessages.length} Mitteilungen
+            {!isTeam && visibleUnreadCount > 0
+              ? ` · ${visibleUnreadCount} ungelesen`
+              : ""}
           </AppText>
         </View>
         {isLoading && accessibleMessages.length === 0 ? (
@@ -243,17 +228,37 @@ export default function MessagesScreen() {
         ) : (
           <View style={styles.messageList}>
             {visibleMessages.map((message) => {
+              const isUnread = unreadMessageIds.has(message.id);
               return (
                 <TouchableOpacity
+                  accessibilityLabel={`${message.subject}${isUnread ? ", ungelesen" : ""}`}
                   onPress={() => router.push(`/mitteilung/${message.id}`)}
                   key={message.id}
-                  style={styles.messageRow}
+                  style={[
+                    styles.messageRow,
+                    isUnread && styles.messageRowUnread,
+                  ]}
                 >
                   <View style={styles.messageIcon}>
                     <AppIcon name="messages" size={20} color={Palette.forest} />
                   </View>
                   <View style={styles.messageCopy}>
-                    <AppText variant="bodyStrong">{message.subject}</AppText>
+                    <View style={styles.messageSubjectRow}>
+                      <AppText variant="bodyStrong" style={styles.messageSubject}>
+                        {message.subject}
+                      </AppText>
+                      {isUnread && (
+                        <View style={styles.unreadLabel}>
+                          <View style={styles.unreadDot} />
+                          <AppText
+                            variant="label"
+                            color={Palette.notificationBlue}
+                          >
+                            Neu
+                          </AppText>
+                        </View>
+                      )}
+                    </View>
                     <AppText color={Palette.inkSoft} numberOfLines={2}>
                       {firstSentence(message.body)}
                     </AppText>
@@ -407,6 +412,12 @@ const styles = StyleSheet.create({
     borderBottomColor: Palette.line,
     paddingVertical: Space.lg,
   },
+  messageRowUnread: {
+    paddingHorizontal: Space.md,
+    borderRadius: Radius.medium,
+    borderBottomColor: Palette.sky,
+    backgroundColor: Palette.skySoft,
+  },
   messageIcon: {
     width: 42,
     height: 42,
@@ -416,4 +427,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   messageCopy: { flex: 1, flexBasis: 240, minWidth: 0, gap: Space.sm },
+  messageSubjectRow: {
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: Space.sm,
+  },
+  messageSubject: { flexShrink: 1 },
+  unreadLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Space.xs,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Palette.notificationBlue,
+  },
 });

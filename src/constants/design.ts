@@ -11,6 +11,7 @@ export const Palette = {
   coralSoft: '#FCE5DC',
   sky: '#8CBFD0',
   skySoft: '#E4F2F6',
+  notificationBlue: '#2F80ED',
   cream: '#F6F3EA',
   paper: '#FFFEFA',
   white: '#FFFFFF',

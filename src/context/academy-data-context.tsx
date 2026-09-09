@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 
-import { loadAcademyData } from '@/lib/academy-api';
+import { loadAcademyData, markMessageRead } from '@/lib/academy-api';
 import { AcademyData, emptyDatabaseData } from '@/types/database';
 import { useAuth } from '@/context/auth-context';
 
@@ -19,12 +19,14 @@ type AcademyDataContextValue = {
   error: string | null;
   refresh: () => Promise<void>;
   execute: <T>(action: () => Promise<T>) => Promise<T>;
+  markMessageAsRead: (messageId: number) => Promise<void>;
 };
 
 const AcademyDataContext = createContext<AcademyDataContextValue | null>(null);
 
 export function AcademyDataProvider({ children }: PropsWithChildren) {
   const { user, profile, isAuthenticated } = useAuth();
+  const profileId = profile?.id;
   const [data, setData] = useState<AcademyData>(emptyDatabaseData);
   const [isLoading, setIsLoading] = useState(isAuthenticated);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -82,9 +84,45 @@ export function AcademyDataProvider({ children }: PropsWithChildren) {
     [refresh]
   );
 
+  const markMessageAsRead = useCallback(
+    async (messageId: number) => {
+      if (!profileId) return;
+
+      const receipt = await markMessageRead(messageId, profileId);
+      setData((current) => ({
+        ...current,
+        messageReads: [
+          receipt,
+          ...current.messageReads.filter(
+            (entry) =>
+              entry.message_id !== receipt.message_id ||
+              entry.profile_id !== receipt.profile_id
+          ),
+        ],
+      }));
+    },
+    [profileId]
+  );
+
   const value = useMemo<AcademyDataContextValue>(
-    () => ({ data, isLoading, isRefreshing, error, refresh, execute }),
-    [data, error, execute, isLoading, isRefreshing, refresh]
+    () => ({
+      data,
+      isLoading,
+      isRefreshing,
+      error,
+      refresh,
+      execute,
+      markMessageAsRead,
+    }),
+    [
+      data,
+      error,
+      execute,
+      isLoading,
+      isRefreshing,
+      markMessageAsRead,
+      refresh,
+    ]
   );
 
   return <AcademyDataContext.Provider value={value}>{children}</AcademyDataContext.Provider>;

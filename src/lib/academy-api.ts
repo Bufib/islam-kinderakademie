@@ -160,6 +160,7 @@ export async function loadAcademyData(): Promise<AcademyData> {
     mediaAssets,
     lessonDocuments,
     messages,
+    messageReads,
   ] = await Promise.all([
     selectTable<AcademyData['profiles'][number]>(
       'profiles',
@@ -291,6 +292,12 @@ export async function loadAcademyData(): Promise<AcademyData> {
       'created_at',
       false
     ),
+
+    selectTable<AcademyData['messageReads'][number]>(
+      'message_reads',
+      'read_at',
+      false
+    ),
   ]);
 
   return {
@@ -319,7 +326,29 @@ export async function loadAcademyData(): Promise<AcademyData> {
     mediaAssets,
     lessonDocuments,
     messages,
+    messageReads,
   };
+}
+
+export async function markMessageRead(
+  messageId: number,
+  profileId: number
+) {
+  const { data, error } = await client()
+    .from('message_reads')
+    .upsert(
+      {
+        message_id: messageId,
+        profile_id: profileId,
+      },
+      { onConflict: 'message_id,profile_id' }
+    )
+    .select('*')
+    .single();
+
+  fail(error);
+
+  return data as AcademyData['messageReads'][number];
 }
 
 export async function createRecord<

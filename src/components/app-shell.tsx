@@ -17,8 +17,10 @@ import { AppIcon, AppIconName } from "@/components/ui/app-icon";
 import { AppText, Pill } from "@/components/ui/primitives";
 import { Layout, Palette, Radius, Space } from "@/constants/design";
 import { useAcademy } from "@/context/academy-context";
+import { useAcademyData } from "@/context/academy-data-context";
 import { useAuth } from "@/context/auth-context";
 import { UserRole } from "@/types/academy";
+import { unreadFamilyMessageIds } from "@/utils/messages";
 
 type NavItem = {
   label: string;
@@ -196,12 +198,19 @@ export function AppShell({ children }: PropsWithChildren) {
     exitChildArea,
   } = useAcademy();
   const { isAuthenticated, profile } = useAuth();
+  const { data } = useAcademyData();
   const router = useRouter();
   const desktop = width >= Layout.desktopBreakpoint;
   const isAdmin = activeRole === "team" && profile?.role === "admin";
   const isLessonFlow =
     pathname.startsWith("/lektion/") || pathname.startsWith("/quiz/");
   const currentRoleMeta = isAdmin ? adminRoleMeta : roleMeta[activeRole];
+  const hasUnreadMessages = useMemo(
+    () =>
+      activeRole === "parent" &&
+      unreadFamilyMessageIds(data, profile?.id).size > 0,
+    [activeRole, data, profile?.id],
+  );
   const navItems = useMemo(
     () => [
       ...roleNavigation[activeRole].filter(
@@ -256,6 +265,7 @@ export function AppShell({ children }: PropsWithChildren) {
               activeRole === "child" ? "Zum Elternbereich" : "Mein Account"
             }
             accountAreaSwitch={accountAreaSwitch}
+            hasUnreadMessages={hasUnreadMessages}
             onOpenAccount={() => {
               if (activeRole === "child") {
                 exitChildArea();
@@ -305,6 +315,7 @@ export function AppShell({ children }: PropsWithChildren) {
             }}
             onOpenNotifications={() => router.push("/mitteilungen" as Href)}
             accountAreaSwitch={accountAreaSwitch}
+            hasUnreadMessages={hasUnreadMessages}
           />
           <View style={styles.routeContent}>{children}</View>
         </View>
@@ -314,6 +325,7 @@ export function AppShell({ children }: PropsWithChildren) {
             navItems={navItems}
             pathname={pathname}
             bottomInset={insets.bottom}
+            hasUnreadMessages={hasUnreadMessages}
           />
         )}
       </View>
@@ -327,6 +339,7 @@ function Sidebar({
   pathname,
   accountLabel,
   accountAreaSwitch,
+  hasUnreadMessages,
   onOpenAccount,
 }: {
   meta: RoleMeta;
@@ -338,6 +351,7 @@ function Sidebar({
     icon: AppIconName;
     onPress: () => void;
   };
+  hasUnreadMessages: boolean;
   onOpenAccount: () => void;
 }) {
   return (
@@ -363,6 +377,7 @@ function Sidebar({
               key={item.href}
               item={item}
               active={isPathActive(pathname, item.href)}
+              unread={hasUnreadMessages && item.href === "/mitteilungen"}
             />
           ))}
         </View>
@@ -435,12 +450,23 @@ function Sidebar({
   );
 }
 
-function NavigationLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavigationLink({
+  item,
+  active,
+  unread,
+}: {
+  item: NavItem;
+  active: boolean;
+  unread: boolean;
+}) {
   const router = useRouter();
 
   return (
     <Pressable
       accessibilityRole="link"
+      accessibilityLabel={
+        unread ? `${item.label}, ungelesene Mitteilungen` : item.label
+      }
       onPress={() => router.push(item.href as Href)}
       style={({ pressed }) => [
         styles.navItem,
@@ -455,13 +481,17 @@ function NavigationLink({ item, active }: { item: NavItem; active: boolean }) {
           color={active ? Palette.ink : Palette.mintStrong}
         />
       </View>
-      <AppText
-        variant="bodyStrong"
-        color={active ? Palette.white : "#D7E7DF"}
-        style={styles.navItemText}
-      >
-        {item.label}
-      </AppText>
+      <View style={styles.navItemLabelRow}>
+        <AppText
+          variant="bodyStrong"
+          color={active ? Palette.white : "#D7E7DF"}
+          numberOfLines={1}
+          style={styles.navItemText}
+        >
+          {item.label}
+        </AppText>
+        {unread && <View style={styles.unreadDot} />}
+      </View>
       {active && <View style={styles.activeDot} />}
     </Pressable>
   );
@@ -475,6 +505,7 @@ function TopBar({
   onOpenAccount,
   onOpenNotifications,
   accountAreaSwitch,
+  hasUnreadMessages,
 }: {
   compact: boolean;
   pageTitle: string;
@@ -487,6 +518,7 @@ function TopBar({
     icon: AppIconName;
     onPress: () => void;
   };
+  hasUnreadMessages: boolean;
 }) {
   return (
     <View style={[styles.topBar, compact && styles.topBarCompact]}>
@@ -539,7 +571,11 @@ function TopBar({
         )}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Mitteilungen öffnen"
+          accessibilityLabel={
+            hasUnreadMessages
+              ? "Mitteilungen öffnen, ungelesene Mitteilungen vorhanden"
+              : "Mitteilungen öffnen"
+          }
           onPress={onOpenNotifications}
           style={({ pressed }) => [
             styles.iconButton,
@@ -547,6 +583,7 @@ function TopBar({
           ]}
         >
           <AppIcon name="bell" size={20} color={Palette.ink} />
+          {hasUnreadMessages && <View style={styles.topUnreadDot} />}
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -565,10 +602,12 @@ function MobileNavigation({
   navItems,
   pathname,
   bottomInset,
+  hasUnreadMessages,
 }: {
   navItems: NavItem[];
   pathname: string;
   bottomInset: number;
+  hasUnreadMessages: boolean;
 }) {
   const router = useRouter();
 
@@ -580,10 +619,14 @@ function MobileNavigation({
         .filter((item) => item.mobile !== false)
         .map((item) => {
           const active = isPathActive(pathname, item.href);
+          const unread = hasUnreadMessages && item.href === "/mitteilungen";
           return (
             <Pressable
               key={item.href}
               accessibilityRole="link"
+              accessibilityLabel={
+                unread ? `${item.label}, ungelesene Mitteilungen` : item.label
+              }
               onPress={() => router.push(item.href as Href)}
               style={({ pressed }) => [
                 styles.mobileNavItem,
@@ -602,14 +645,17 @@ function MobileNavigation({
                   color={active ? Palette.white : Palette.muted}
                 />
               </View>
-              <AppText
-                variant="small"
-                color={active ? Palette.forest : Palette.muted}
-                numberOfLines={1}
-                style={styles.mobileNavLabel}
-              >
-                {item.shortLabel ?? item.label}
-              </AppText>
+              <View style={styles.mobileNavLabelRow}>
+                <AppText
+                  variant="small"
+                  color={active ? Palette.forest : Palette.muted}
+                  numberOfLines={1}
+                  style={styles.mobileNavLabel}
+                >
+                  {item.shortLabel ?? item.label}
+                </AppText>
+                {unread && <View style={styles.mobileUnreadDot} />}
+              </View>
             </Pressable>
           );
         })}
@@ -697,8 +743,22 @@ const styles = StyleSheet.create({
   navIconActive: {
     backgroundColor: Palette.sun,
   },
-  navItemText: {
+  navItemLabelRow: {
     flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Space.sm,
+  },
+  navItemText: {
+    flexShrink: 1,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    flexShrink: 0,
+    borderRadius: 4,
+    backgroundColor: Palette.notificationBlue,
   },
   activeDot: {
     width: 5,
@@ -844,6 +904,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Palette.white,
   },
+  topUnreadDot: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Palette.notificationBlue,
+    borderWidth: 1,
+    borderColor: Palette.white,
+  },
   topAvatar: {
     width: 40,
     height: 40,
@@ -888,6 +959,22 @@ const styles = StyleSheet.create({
   mobileNavLabel: {
     fontSize: 10,
     fontWeight: "600",
+    flexShrink: 1,
+  },
+  mobileNavLabelRow: {
+    maxWidth: "100%",
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  mobileUnreadDot: {
+    width: 7,
+    height: 7,
+    flexShrink: 0,
+    borderRadius: 4,
+    backgroundColor: Palette.notificationBlue,
   },
   modalBackdrop: {
     flex: 1,

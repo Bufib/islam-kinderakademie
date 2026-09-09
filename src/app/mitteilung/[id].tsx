@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/app-icon';
@@ -10,6 +10,7 @@ import { useAcademy } from '@/context/academy-context';
 import { useAcademyData } from '@/context/academy-data-context';
 import { useAuth } from '@/context/auth-context';
 import { formatDateTime } from '@/utils/format';
+import { accessibleFamilyMessages } from '@/utils/messages';
 
 export default function MessageDetailScreen() {
   const router = useRouter();
@@ -18,36 +19,36 @@ export default function MessageDetailScreen() {
   const [openedAt] = useState(() => Date.now());
   const { activeRole } = useAcademy();
   const { profile } = useAuth();
-  const { data, isLoading, error, refresh } = useAcademyData();
+  const { data, isLoading, error, refresh, markMessageAsRead } = useAcademyData();
   const candidateMessage = data.messages.find((entry) => entry.id === messageId);
-  const ownChildIds = new Set(
-    data.children
-      .filter((child) => child.parent_profile_id === profile?.id)
-      .map((child) => child.id)
-  );
-  const ownApprovedGroupIds = new Set(
-    data.groupMembers
-      .filter(
-        (membership) =>
-          ownChildIds.has(membership.child_id) &&
-          membership.membership_status === 'approved'
-      )
-      .map((membership) => membership.group_id)
-  );
-  const familyCanReadCandidate = Boolean(
-    candidateMessage?.published_at &&
-      new Date(candidateMessage.published_at).getTime() <= openedAt &&
-      (candidateMessage.audience === 'all' ||
-        (candidateMessage.audience === 'profile' &&
-          candidateMessage.recipient_profile_id === profile?.id) ||
-        (candidateMessage.audience === 'group' &&
-          Boolean(candidateMessage.group_id) &&
-          ownApprovedGroupIds.has(candidateMessage.group_id!)))
+  const familyCanReadCandidate = accessibleFamilyMessages(
+    data,
+    profile?.id,
+    openedAt
+  ).some((entry) => entry.id === messageId);
+  const isAlreadyRead = data.messageReads.some(
+    (entry) =>
+      entry.message_id === messageId && entry.profile_id === profile?.id
   );
   const message =
     activeRole === 'team' || familyCanReadCandidate
       ? candidateMessage
       : undefined;
+
+  useEffect(() => {
+    if (
+      activeRole === 'team' ||
+      !message ||
+      isAlreadyRead ||
+      !Number.isFinite(messageId)
+    ) {
+      return;
+    }
+
+    void markMessageAsRead(messageId).catch(() => {
+      // Die Mitteilung bleibt lesbar; beim naechsten Oeffnen wird erneut versucht.
+    });
+  }, [activeRole, isAlreadyRead, markMessageAsRead, message, messageId]);
 
   if (isLoading && !message) return <DataLoading label="Mitteilung wird geladen …" />;
 
@@ -56,7 +57,8 @@ export default function MessageDetailScreen() {
       <PageScaffold
         eyebrow="Mitteilung"
         title="Mitteilung nicht verfügbar"
-        action={<ActionButton label="Zurück zu den Mitteilungen" icon="arrow" variant="secondary" onPress={() => router.replace('/mitteilungen')} />}>
+        actionAbove
+        action={<ActionButton label="Zurück zu den Mitteilungen" icon="arrowBack" variant="secondary" onPress={() => router.replace('/mitteilungen')} />}>
         <Card>
           <EmptyState
             icon="messages"
@@ -82,9 +84,10 @@ export default function MessageDetailScreen() {
 
   return (
     <PageScaffold
-      eyebrow={activeRole === 'team' ? 'Team-Mitteilung' : 'Mitteilungen'}
       title={message.subject}
-      action={<ActionButton label="Zurück zu den Mitteilungen" icon="arrow" variant="secondary" onPress={() => router.back()} />}>
+      titleStyle={styles.messageTitle}
+      actionAbove
+      action={<ActionButton label="Zurück zu den Mitteilungen" icon="arrowBack" variant="secondary" onPress={() => router.back()} />}>
       {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}
       <Card style={styles.messageCard}>
         <View style={styles.messageHeader}>
@@ -105,6 +108,7 @@ export default function MessageDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  messageTitle: { paddingLeft: 6 },
   messageCard: { minHeight: 360, gap: Space.xl },
   messageHeader: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Space.md },
   messageIcon: { width: 50, height: 50, borderRadius: Radius.medium, backgroundColor: Palette.mint, alignItems: 'center', justifyContent: 'center' },

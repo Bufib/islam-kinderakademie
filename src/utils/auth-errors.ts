@@ -32,5 +32,5 @@ export function translateAuthError(message: string) {
     return message;
   }
 
-  return 'Das hat leider nicht funktioniert. Bitte versuche es erneut.';
+  return message;
 }

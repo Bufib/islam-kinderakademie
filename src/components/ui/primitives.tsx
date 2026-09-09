@@ -199,17 +199,21 @@ export function Pill({ children, tone = "neutral", icon }: PillProps) {
 type PageScaffoldProps = {
   children: ReactNode;
   title?: string;
+  titleStyle?: StyleProp<TextStyle>;
   eyebrow?: string;
   description?: string;
   action?: ReactNode;
+  actionAbove?: boolean;
 };
 
 export function PageScaffold({
   children,
   title,
+  titleStyle,
   eyebrow,
   description,
   action,
+  actionAbove = false,
 }: PageScaffoldProps) {
   const { width } = useWindowDimensions();
   const compact = width < Layout.compactBreakpoint;
@@ -227,7 +231,11 @@ export function PageScaffold({
       <View style={styles.pageInner}>
         {(title || eyebrow || description || action) && (
           <View
-            style={[styles.pageHeader, compact && styles.pageHeaderCompact]}
+            style={[
+              styles.pageHeader,
+              compact && styles.pageHeaderCompact,
+              actionAbove && styles.pageHeaderActionAbove,
+            ]}
           >
             <View style={styles.pageHeadingCopy}>
               {eyebrow && (
@@ -240,7 +248,10 @@ export function PageScaffold({
                 </AppText>
               )}
               {title && (
-                <AppText variant={compact ? "title" : "display"}>
+                <AppText
+                  variant={compact ? "title" : "display"}
+                  style={titleStyle}
+                >
                   {title}
                 </AppText>
               )}
@@ -603,6 +614,11 @@ const styles = StyleSheet.create({
   pageHeaderCompact: {
     alignItems: "stretch",
     flexDirection: "column",
+  },
+  pageHeaderActionAbove: {
+    alignItems: "flex-start",
+    flexDirection: "column-reverse",
+    gap: Space.lg,
   },
   pageHeadingCopy: {
     flex: 1,
